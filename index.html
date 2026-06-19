@@ -7,15 +7,15 @@
 
 <style>
   :root{
-    --paper:#F7F4EE;--surface:#FFFFFF;--surface-2:#FCFAF6;
-    --ink:#22302F;--ink-soft:#637072;--ink-faint:#92999A;
-    --line:#E7E1D6;--line-strong:#D8D1C3;
-    --primary:#0E6E66;--primary-dark:#0A544D;--primary-tint:#E4F1EE;
+    --paper:#EDF2F9;--surface:#FFFFFF;--surface-2:#F4F8FC;
+    --ink:#1C2A3A;--ink-soft:#54657B;--ink-faint:#8B98A9;
+    --line:#DDE6F1;--line-strong:#C5D2E2;
+    --primary:#1F5FB0;--primary-dark:#174A8C;--primary-tint:#E5EFFA;
     --resolved:#2563EB;--resolved-tint:#E7EEFC;
     --pending:#C07814;--pending-tint:#FBF0DD;
     --blocked:#6B7280;--blocked-tint:#EDEFF1;
     --danger:#D03A2C;
-    --shadow:0 1px 2px rgba(34,48,47,.05),0 6px 20px rgba(34,48,47,.06);
+    --shadow:0 1px 2px rgba(27,42,61,.05),0 6px 20px rgba(27,42,61,.06);
     --radius:14px;--radius-sm:9px;
   }
   *{box-sizing:border-box}
@@ -104,27 +104,41 @@
   .add-toggle.open{color:var(--ink-soft);border-style:solid}
   #newReportPanel{margin-top:14px}
 
-  .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
-  .stat{display:flex;flex-direction:column;align-items:flex-start;gap:2px;cursor:pointer;text-align:left;
-    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
-    font-family:inherit;transition:all .15s;border-left-width:4px;border-left-color:var(--line-strong)}
-  .stat:hover{box-shadow:var(--shadow)}
-  .stat .stat-num{font-size:22px;font-weight:700;line-height:1.1;color:var(--ink)}
-  .stat .stat-label{font-size:12px;color:var(--ink-soft);font-weight:500}
-  .stat.active{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
-  .stat.s-pending{border-left-color:var(--pending)}
-  .stat.s-pending.active{border-color:var(--pending);box-shadow:0 0 0 1px var(--pending)}
-  .stat.s-overdue{border-left-color:#FF0000}
-  .stat.s-overdue .stat-num{color:#D03A2C}
-  .stat.s-overdue.active{border-color:#D03A2C;box-shadow:0 0 0 1px #D03A2C}
-  .stat.s-resolved{border-left-color:var(--resolved)}
-  .stat.s-resolved.active{border-color:var(--resolved);box-shadow:0 0 0 1px var(--resolved)}
-  .stat.s-blocked{border-left-color:var(--blocked)}
-  .stat.s-blocked.active{border-color:var(--blocked);box-shadow:0 0 0 1px var(--blocked)}
+  .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+  .stat{--accent:var(--primary);--tintc:var(--primary-tint);
+    display:flex;flex-direction:column;gap:3px;cursor:pointer;text-align:left;
+    background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:10px 13px;
+    font-family:inherit;transition:transform .16s,box-shadow .16s,border-color .16s,background .16s}
+  .stat:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(27,42,61,.10);border-color:var(--accent)}
+  .stat .stat-label{order:-1;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
+    color:var(--ink-soft);letter-spacing:.01em;white-space:nowrap}
+  .stat .stat-label::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none;
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+  .stat .stat-num{font-size:22px;font-weight:800;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .stat.s-pending{--accent:var(--pending);--tintc:var(--pending-tint)}
+  .stat.s-overdue{--accent:#E0342A;--tintc:#FCE7E4}
+  .stat.s-resolved{--accent:var(--resolved);--tintc:var(--resolved-tint)}
+  .stat.s-blocked{--accent:var(--blocked);--tintc:var(--blocked-tint)}
+  .stat.active{border-color:var(--accent);background:var(--tintc);box-shadow:0 1px 2px rgba(27,42,61,.06)}
+  .stat.active .stat-num,.stat.active .stat-label{color:var(--accent)}
 
-  .list-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .list-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
   .sort{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft)}
   .sort select{width:auto;min-width:190px;padding:8px 32px 8px 12px;font-size:13.5px;border-radius:999px;background-color:var(--surface)}
+  .tools-right{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap}
+  .chk-group{display:flex;flex-wrap:wrap;gap:8px}
+  .chk{display:inline-flex;align-items:center;gap:7px;cursor:pointer;background:var(--surface);
+    border:1px solid var(--line-strong);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);transition:all .15s}
+  .chk input{accent-color:var(--primary);margin:0;cursor:pointer;width:15px;height:15px}
+  .chk:hover{border-color:var(--primary)}
+  .chk.on{background:var(--primary-tint);border-color:var(--primary);color:var(--primary-dark);font-weight:600}
+  .cat-filter{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .cat-filter .cf-label{font-size:10.5px;font-weight:600;color:var(--ink-soft)}
+  .cat-filter .chk{padding:2px 7px;font-size:10.5px;gap:4px;border-radius:7px}
+  .cat-filter .chk input{width:12px;height:12px}
+  .cf-reset{margin-left:6px;border:none;background:none;color:var(--ink-faint);font-family:inherit;
+    font-size:10.5px;font-weight:600;cursor:pointer;text-decoration:underline;padding:2px 3px}
+  .cf-reset:hover{color:var(--primary)}
   .search{position:relative}
   .search input{padding-left:34px;min-width:200px;border-radius:999px;background:var(--surface)}
   .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-faint)}
@@ -145,7 +159,7 @@
     border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:middle}
   .report-main{flex:1;padding:18px 20px;min-width:0}
   .report-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
-  .report-issue{font-size:16.5px;font-weight:700;margin:9px 0 0;word-break:break-word}
+  .report-issue{font-size:16.5px;font-weight:700;margin:1px 0 0;word-break:break-word;line-height:1.35}
   .pill{flex:none;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;white-space:nowrap}
   .pill.resolved{background:var(--resolved-tint);color:var(--resolved)}
   .pill.pending{background:var(--pending-tint);color:var(--pending)}
@@ -153,20 +167,23 @@
   .meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--ink-soft);font-size:13px;margin:0;flex:1}
   .meta b{color:var(--ink);font-weight:500}
   .meta-primary{display:flex;flex-wrap:wrap;gap:4px 22px;flex:1}
-  .meta-primary span{font-size:14px;color:var(--ink-soft)}
-  .meta-primary b{font-size:16px;font-weight:700;color:var(--ink);margin-left:4px}
+  .meta-primary span{font-size:11.5px;color:var(--ink-soft)}
+  .meta-primary b{font-size:12px;font-weight:700;color:var(--ink);margin-left:4px}
+  .meta-primary .cat-tag{font-size:10.5px;font-weight:700;color:var(--primary);background:var(--primary-tint);
+    border-radius:6px;padding:2px 8px;margin-left:0}
   .meta-secondary{display:flex;flex-wrap:wrap;gap:4px 18px;color:var(--ink-soft);font-size:12.5px;margin-top:6px}
   .meta-secondary b{color:var(--ink);font-weight:500;margin-left:3px}
   .meta-secondary b.overdue{color:#FF0000;font-weight:700;font-size:14.5px}
   .report-detail{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-strong);display:none}
   .report-detail.open{display:block}
-  .inline-editor{background:var(--surface-2);border-top:1px solid var(--line)!important;
+  .inline-editor{background:var(--surface);border-top:1px solid var(--line)!important;
     margin:14px -20px -18px;padding:18px 20px;border-radius:0 0 var(--radius) 0}
+  .inline-editor input,.inline-editor textarea,.inline-editor select,.inline-editor .tagbox{background:var(--surface)}
   .inline-editor .section-label{margin-top:0}
   .inline-editor .section-label.sp{margin-top:22px}
   .inline-editor .form-actions{justify-content:flex-end;margin-top:18px}
   .ro-tag{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--ink-faint);
-    background:#EFEBE2;border-radius:999px;padding:2px 9px}
+    background:#E6EDF6;border-radius:999px;padding:2px 9px}
   .ro-block{display:flex;flex-direction:column;gap:11px;margin-bottom:4px}
   .ro-row{display:flex;gap:12px;align-items:baseline}
   .ro-k{font-size:12px;font-weight:700;color:var(--primary);min-width:60px;flex:none}
@@ -225,9 +242,9 @@
   .menu-edit input,.menu-edit textarea{font-size:14px;padding:8px 10px}
   .menu-edit textarea{min-height:54px;line-height:1.6}
   .menu-edit .me-btns{display:flex;gap:8px;justify-content:flex-end}
-  .soon-tag{font-size:10.5px;font-weight:700;color:var(--ink-faint);background:#EFEBE2;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+  .soon-tag{font-size:10.5px;font-weight:700;color:var(--ink-faint);background:#E6EDF6;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle}
 
-  .overlay{position:fixed;inset:0;background:rgba(34,48,47,.42);backdrop-filter:blur(2px);
+  .overlay{position:fixed;inset:0;background:rgba(27,42,61,.42);backdrop-filter:blur(2px);
     display:none;align-items:flex-start;justify-content:center;padding:20px;z-index:50;overflow:auto}
   .overlay.open{display:flex}
   .modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:560px;margin:auto;
@@ -255,13 +272,13 @@
     transition:transform .15s,box-shadow .15s,border-color .15s}
   .menu-card.active{cursor:pointer}
   .menu-card.active:hover{transform:translateY(-3px);border-color:var(--primary);
-    box-shadow:0 2px 4px rgba(34,48,47,.06),0 14px 34px rgba(34,48,47,.12)}
+    box-shadow:0 2px 4px rgba(27,42,61,.06),0 14px 34px rgba(27,42,61,.12)}
   .menu-card .mc-name{font-size:17px;font-weight:700}
   .menu-card .mc-desc{font-size:13px;color:var(--ink-soft);line-height:1.6;flex:1}
   .menu-card .mc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
   .menu-badge{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px}
   .menu-badge.ready{background:var(--primary-tint);color:var(--primary-dark)}
-  .menu-badge.soon{background:#EFEBE2;color:var(--ink-faint)}
+  .menu-badge.soon{background:#E6EDF6;color:var(--ink-faint)}
   .menu-card .mc-open{color:var(--primary);font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
   .menu-card.soon{opacity:.7}
   .view-back{margin-bottom:18px}
@@ -279,6 +296,7 @@
     .summary{grid-template-columns:repeat(2,1fr)}
     .stat .stat-num{font-size:19px}
     .list-tools{flex-direction:column;align-items:stretch}
+    .tools-right{flex-direction:column;align-items:stretch;gap:10px}
     .sort{justify-content:space-between}
     .sort select{flex:1;min-width:0}
   }
@@ -304,9 +322,7 @@
     <button class="ghost-pill view-back" id="komatteBack">← 報告メニューに戻る</button>
     <header class="view-head">
       <div class="title-group">
-        <span class="eyebrow">困っている</span>
         <h1>お客様の困っている情報の収集</h1>
-        <span class="subtitle">お客様が困っている情報を記録し、毎月の対応入力で解決までを管理します</span>
       </div>
     </header>
     <div id="mainView">
@@ -357,9 +373,19 @@
           <option value="status">対応状況順（保留を上に）</option>
         </select>
       </div>
-      <div class="search">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="text" id="searchInput" placeholder="キーワードで検索">
+      <div class="tools-right">
+        <div class="cat-filter" id="catFilter">
+          <span class="cf-label">カテゴリ</span>
+          <label class="chk"><input type="checkbox" value="GCC案件"><span>GCC</span></label>
+          <label class="chk"><input type="checkbox" value="SEI案件"><span>SEI</span></label>
+          <label class="chk"><input type="checkbox" value="開発案件"><span>開発</span></label>
+          <label class="chk"><input type="checkbox" value="その他"><span>他</span></label>
+          <button type="button" class="cf-reset" id="catReset">リセット</button>
+        </div>
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="searchInput" placeholder="キーワードで検索">
+        </div>
       </div>
     </div>
     <div id="listArea"><div class="loading">読み込み中…</div></div>
@@ -432,7 +458,7 @@
 
   var DEPT_KEY="config:departments",EMP_KEY="config:employees",DATA_KEY="data:reports";
   var DEFAULT_DEPTS=["営業部","カスタマーサポート部","技術部","製造部","総務部"];
-  var state={departments:[],employees:[],reports:[],filter:"all",search:"",sort:"report"};
+  var state={departments:[],employees:[],reports:[],filter:"all",search:"",sort:"report",catFilter:[]};
   var editingDeptId=null,editingEmpId=null;
 
   function $(s){return document.querySelector(s);}
@@ -440,7 +466,7 @@
   function esc(s){return (s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   function statusClass(s){return s==="解決済"?"resolved":s==="解決不可能"?"blocked":"pending";}
   function fmtDate(iso){if(!iso)return "";var p=iso.split("-");if(p.length!==3)return iso;return p[0]+"/"+p[1]+"/"+p[2];}
-  function fmtMonth(iso){if(!iso)return "";var p=iso.split("-");if(p.length<2)return iso;return p[0]+"/"+p[1];}
+  function fmtMonth(iso){if(!iso)return "";var p=iso.split("-");if(p.length<2)return iso;return p[0]+"年"+parseInt(p[1],10)+"月";}
   function curMonthStr(){var n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0");}
   function isOverdue(r){return r.status==="保留"&&r.completionDate&&r.completionDate.slice(0,7)<curMonthStr();}
   function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
@@ -516,6 +542,10 @@
     if(state.search){var q=state.search.toLowerCase();var p=resolveProposer(r);
       var hay=[r.customerIssue,r.detail,r.solution,p.name,p.dept,(r.implementers||[]).join(" ")].join(" ").toLowerCase();
       if(hay.indexOf(q)===-1)return false;}
+    if(state.catFilter&&state.catFilter.length){
+      var rc=Array.isArray(r.category)?r.category:(r.category?[r.category]:[]);
+      if(!state.catFilter.some(function(c){return rc.indexOf(c)!==-1;}))return false;
+    }
     return true;
   }
   function sortReports(arr){
@@ -557,6 +587,18 @@
     curTagbox.appendChild(curTagInput);fImp.appendChild(impLabel);fImp.appendChild(curTagbox);
     var fComp=fieldBox('完了時期<span class="hint">年・月のみ／未入力なら未定</span>',"month");fComp.input.value=(r.completionDate||"").slice(0,7);
     var fNote=fieldBox('備考',"text",true);fNote.input.value=r.completionNote||"";fNote.input.placeholder="例：先方確認待ちのため延期";
+    var fCat=el("div","field full");
+    var catLabel=el("label");catLabel.innerHTML='カテゴリ<span class="hint">複数選択できます</span>';
+    var catBox=el("div","chk-group");
+    var curCats=Array.isArray(r.category)?r.category.slice():(r.category?[r.category]:[]);
+    ["GCC案件","SEI案件","開発案件","その他"].forEach(function(c){
+      var lab=el("label","chk"+(curCats.indexOf(c)!==-1?" on":""));
+      var cb=el("input");cb.type="checkbox";cb.value=c;cb.checked=curCats.indexOf(c)!==-1;
+      var sp=el("span");sp.textContent=c;
+      cb.addEventListener("change",function(){lab.classList.toggle("on",cb.checked);});
+      lab.appendChild(cb);lab.appendChild(sp);catBox.appendChild(lab);
+    });
+    fCat.appendChild(catLabel);fCat.appendChild(catBox);
     var fStat=el("div","field full");var statLabel=el("label");statLabel.innerHTML='対応状況<span class="req">*</span>';
     curStatusWrap=el("div","status-seg");
     ["解決済","保留","解決不可能"].forEach(function(s){
@@ -564,7 +606,7 @@
       lab.onclick=function(){curStatus=s;applyStatusVisual();};curStatusWrap.appendChild(lab);
     });
     fStat.appendChild(statLabel);fStat.appendChild(curStatusWrap);
-    g2.appendChild(fSol.wrap);g2.appendChild(fImp);g2.appendChild(fComp.wrap);g2.appendChild(fNote.wrap);g2.appendChild(fStat);
+    g2.appendChild(fSol.wrap);g2.appendChild(fImp);g2.appendChild(fComp.wrap);g2.appendChild(fNote.wrap);g2.appendChild(fCat);g2.appendChild(fStat);
 
     var act=el("div","form-actions");
     var cancel=el("button","btn btn-ghost btn-sm");cancel.type="button";cancel.textContent="キャンセル";
@@ -588,7 +630,7 @@
       var idx=state.reports.findIndex(function(x){return x.id===r.id;});if(idx<0)return;
       state.reports[idx]=Object.assign({},state.reports[idx],{
         solution:fSol.input.value.trim(),implementers:implementers.slice(),
-        completionDate:fComp.input.value,completionNote:fNote.input.value.trim(),status:curStatus,updatedAt:Date.now()});
+        completionDate:fComp.input.value,completionNote:fNote.input.value.trim(),category:(function(){var a=[];catBox.querySelectorAll("input:checked").forEach(function(cb){a.push(cb.value);});return a;})(),status:curStatus,updatedAt:Date.now()});
       var ok=await persistReports();toast(ok?"保存しました":"保存に問題がありました");
       openEditorId=null;clearEditorRefs();renderList();
     };
@@ -625,7 +667,9 @@
       var main=el("div","report-main");
       var top=el("div","report-top");
       var meta=el("div","meta-primary");
-      meta.innerHTML='<span>報告日 <b>'+fmtDate(r.reportDate)+'</b></span><span>提案者 <b>'+proposerLabel+'</b></span>';
+      var cats=Array.isArray(r.category)?r.category:(r.category?[r.category]:[]);
+      var catHtml=cats.map(function(c){return '<span class="cat-tag">'+esc(c)+'</span>';}).join('');
+      meta.innerHTML='<span>報告日 <b>'+fmtDate(r.reportDate)+'</b></span><span>提案者 <b>'+proposerLabel+'</b></span>'+catHtml;
       var pills=el("div","pill-group");
       pills.innerHTML=(overdue?'<span class="pill overdue-pill">期限超過</span>':'')+'<span class="pill '+sc+'">'+esc(r.status)+'</span>';
       top.appendChild(meta);top.appendChild(pills);
@@ -637,7 +681,6 @@
       meta3.innerHTML='<span>実施担当者 <b>'+imp+'</b></span>';
       var issue=el("h3","report-issue");issue.textContent=r.customerIssue;
       main.appendChild(top);main.appendChild(issue);main.appendChild(meta2);main.appendChild(meta3);
-      if(r.solution){var solP=el("div","sol-preview");solP.innerHTML='<span class="sp-label">解決策</span>'+esc(r.solution);main.appendChild(solP);}
 
       if(openEditorId===r.id){
         main.appendChild(buildInlineEditor(r));
@@ -676,7 +719,7 @@
     var data={reportDate:$("#reportDate").value,
       proposerId:emp.id,proposerName:emp.name,proposerDeptName:deptName(emp.deptId),
       customerIssue:$("#customerIssue").value.trim(),detail:$("#detail").value.trim(),
-      solution:"",implementers:[],completionDate:"",completionNote:"",status:"保留"};
+      solution:"",implementers:[],completionDate:"",completionNote:"",category:[],status:"保留"};
     if(!data.reportDate||!data.customerIssue){toast("必須項目（*）を入力してください");return;}
     data.id=uid();data.createdAt=Date.now();
     state.reports.push(data);
@@ -919,6 +962,12 @@
       state.filter=b.dataset.f;renderList();});
     $("#sortSelect").addEventListener("change",function(ev){state.sort=ev.target.value;renderList();});
     $("#searchInput").addEventListener("input",function(ev){state.search=ev.target.value.trim();renderList();});
+    $("#catFilter").addEventListener("change",function(ev){var cb=ev.target;if(!cb||cb.type!=="checkbox")return;
+      cb.parentNode.classList.toggle("on",cb.checked);
+      state.catFilter=Array.prototype.slice.call(this.querySelectorAll("input:checked")).map(function(x){return x.value;});renderList();});
+    $("#catReset").addEventListener("click",function(){
+      $("#catFilter").querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.checked=false;cb.parentNode.classList.remove("on");});
+      state.catFilter=[];renderList();});
 
     $("#openSettings").addEventListener("click",showSettings);
     $("#backToMain").addEventListener("click",showHome);
@@ -955,7 +1004,24 @@
     // reports (normalize old proposer string)
     var r=await sget(DATA_KEY);
     if(r&&r.value){try{state.reports=JSON.parse(r.value)||[];}catch(e){state.reports=[];}
-      state.reports.forEach(function(x){if(!x.proposerName&&x.proposer)x.proposerName=x.proposer;if(x.status==="保留中")x.status="保留";});}
+      state.reports.forEach(function(x){if(!x.proposerName&&x.proposer)x.proposerName=x.proposer;if(x.status==="保留中")x.status="保留";if(typeof x.category==="string")x.category=x.category?[x.category]:[];if(x.category==null)x.category=[];});}
+    if(state.reports.length===0){
+      var findEmp=function(n){return state.employees.find(function(x){return x.name===n;});};
+      var t=Date.now();
+      var raw=[
+        {p:"山田花子",reportDate:"2026-04-10",customerIssue:"納品書のレイアウトが分かりにくい",detail:"取引先より、納品書の品目と金額の対応が読み取りづらいとの指摘。複数件、同様の声が寄せられている。",solution:"帳票テンプレートを見直し、品目ごとに区切り線と小計欄を追加する方向で検討中。",implementers:["田中一郎"],completionDate:"2026-05",completionNote:"印刷業者の確認待ちで遅延中",category:["GCC案件"],status:"保留"},
+        {p:"田中一郎",reportDate:"2026-05-08",customerIssue:"問い合わせ電話がつながりにくい時間帯がある",detail:"月初の午前中に入電が集中し、待ち時間が長いとのご意見。",solution:"月初午前の応対シフトを1名増員し、折り返し予約の仕組みをご案内する運用に変更。",implementers:["山田花子","太田隆"],completionDate:"2026-05",completionNote:"",category:["SEI案件"],status:"解決済"},
+        {p:"太田隆",reportDate:"2026-06-02",customerIssue:"管理画面のログインが時々失敗する",detail:"特定ブラウザでセッションが切れやすいとの報告。再現条件を調査中。",solution:"セッション保持の設定を見直し、次回アップデートで改修予定。",implementers:["太田隆"],completionDate:"2026-08",completionNote:"次回リリースに合わせて対応",category:["開発案件"],status:"保留"},
+        {p:"山田花子",reportDate:"2026-03-20",customerIssue:"製造終了した旧モデルの交換部品がほしい",detail:"旧モデルの交換部品について、継続供給の要望をいただいた。",solution:"部品の在庫終了かつ再生産が困難なため、後継製品への移行をご案内。",implementers:["山田花子"],completionDate:"",completionNote:"代替品をご提案済み",category:["その他"],status:"解決不可能"},
+        {p:"田中一郎",reportDate:"2026-06-15",customerIssue:"請求書をPDFでも受け取りたい",detail:"郵送に加えて、メールでのPDF送付を希望される取引先が増えている。",solution:"",implementers:[],completionDate:"",completionNote:"",category:["GCC案件","開発案件"],status:"保留"}
+      ];
+      state.reports=raw.map(function(o,i){var e=findEmp(o.p);
+        return {id:uid(),createdAt:t+i,reportDate:o.reportDate,
+          proposerId:e?e.id:"",proposerName:e?e.name:o.p,proposerDeptName:e?deptName(e.deptId):"",
+          customerIssue:o.customerIssue,detail:o.detail,solution:o.solution,implementers:o.implementers,
+          completionDate:o.completionDate,completionNote:o.completionNote,category:o.category,status:o.status};});
+      await persistReports();
+    }
     resetCreateForm();showHome();
     if(!hasStore&&!hasLS)toast("このブラウザではデータが保存されません");
   }
