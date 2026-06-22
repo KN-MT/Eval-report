@@ -4,6 +4,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
   :root{
@@ -122,7 +123,9 @@
   .stat.active{border-color:var(--accent);background:var(--tintc);box-shadow:0 1px 2px rgba(27,42,61,.06)}
   .stat.active .stat-num,.stat.active .stat-label{color:var(--accent)}
 
-  .list-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .list-tools{display:flex;align-items:center;justify-content:space-between;gap:12px 14px;flex-wrap:wrap;margin-bottom:10px}
+  .lt-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .chk.prevm{padding:5px 11px;font-size:12px}
   .sort{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft)}
   .sort select{width:auto;min-width:190px;padding:8px 32px 8px 12px;font-size:13.5px;border-radius:999px;background-color:var(--surface)}
   .tools-right{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap}
@@ -144,6 +147,28 @@
   .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-faint)}
 
   .cards{display:flex;flex-direction:column;gap:14px}
+  .mcard{position:relative;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
+  .mcard-row{display:flex;gap:10px;padding:4px 0;font-size:14px}
+  .mcard-l{flex:0 0 132px;color:var(--ink-soft);font-size:12.5px;font-weight:600;padding-top:1px}
+  .mcard-v{flex:1;color:var(--ink);white-space:normal;word-break:break-word}
+  .mcard-v.ml{white-space:pre-wrap;line-height:1.6}
+  .mcard-thumb{max-width:170px;max-height:120px;border-radius:8px;border:1px solid var(--line);cursor:pointer;display:block}
+  .mod-badge{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px}
+  .mcard-act{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .mini-btn.danger{color:var(--danger);border-color:var(--danger)}
+  .mod-check{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--ink)}
+  .mod-check input{width:16px;height:16px;accent-color:var(--primary)}
+  .mod-people{display:flex;flex-wrap:wrap;gap:8px}
+  .mod-people-empty{color:var(--ink-faint);font-size:13px}
+  .sheets-status{font-size:13.5px;font-weight:700;margin:0 0 14px}
+  .sheets-status.on{color:var(--primary)}
+  .sheets-status.off{color:var(--ink-soft)}
+  .sheets-hint{font-size:12px;color:var(--ink-faint);margin:14px 0 0;line-height:1.6}
+  .mod-img input{font-size:13px}
+  .mod-img-prev{margin-top:8px}
+  .mod-img-prev img{max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--line);display:block;margin-bottom:6px;cursor:pointer}
+  .img-overlay{position:fixed;inset:0;background:rgba(27,42,61,.82);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;cursor:zoom-out}
+  .img-overlay img{max-width:92%;max-height:92%;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
   .report{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex}
   .spine{width:6px;flex:none}
   .spine.resolved{background:var(--resolved)}
@@ -266,23 +291,49 @@
   [hidden]{display:none!important}
 
   /* report menu (home) */
-  .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px}
-  .menu-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    box-shadow:var(--shadow);padding:20px;display:flex;flex-direction:column;gap:6px;min-height:140px;
-    transition:transform .15s,box-shadow .15s,border-color .15s}
-  .menu-card.active{cursor:pointer}
-  .menu-card.active:hover{transform:translateY(-3px);border-color:var(--primary);
-    box-shadow:0 2px 4px rgba(27,42,61,.06),0 14px 34px rgba(27,42,61,.12)}
-  .menu-card .mc-name{font-size:17px;font-weight:700}
-  .menu-card .mc-desc{font-size:13px;color:var(--ink-soft);line-height:1.6;flex:1}
-  .menu-card .mc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
-  .menu-badge{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px}
-  .menu-badge.ready{background:var(--primary-tint);color:var(--primary-dark)}
+  .menu-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    background:linear-gradient(135deg,#163E72 0%,#1F5FB0 55%,#2E86C8 100%);
+    border-radius:18px;padding:20px 26px;margin-bottom:22px;box-shadow:0 8px 26px rgba(22,62,114,.2);color:#fff}
+  .menu-hero .hero-text{display:flex;flex-direction:column;gap:6px}
+  .menu-hero .hero-eyebrow{font-size:12px;letter-spacing:.18em;font-weight:700;color:rgba(255,255,255,.72);text-transform:uppercase}
+  .menu-hero h1{font-size:30px;font-weight:800;margin:0;color:#fff;letter-spacing:.02em}
+  .menu-hero .hero-sub{font-size:13.5px;color:rgba(255,255,255,.85)}
+  .hero-btn{border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.14);color:#fff;border-radius:999px;
+    padding:7px 15px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
+  .hero-btn:hover{background:#fff;color:#1F5FB0;border-color:#fff}
+
+  .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(214px,1fr));gap:12px}
+  .menu-card{--accent:#2563EB;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:14px 15px 13px 18px;display:flex;flex-direction:column;gap:7px;
+    overflow:hidden;transition:transform .18s,box-shadow .18s,border-color .18s}
+  .menu-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}
+  .menu-card .mc-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-size:18px;line-height:1;background:color-mix(in srgb,var(--accent) 15%,#fff);transition:transform .18s,background .18s}
+  .menu-card .mc-name{font-size:14.5px;font-weight:700;color:var(--ink)}
+  .menu-card .mc-desc{font-size:11.5px;color:var(--ink-soft);line-height:1.55;flex:1}
+  .menu-card .mc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:3px}
+  .menu-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px}
+  .menu-badge.ready{background:color-mix(in srgb,var(--accent) 14%,#fff);color:var(--accent)}
   .menu-badge.soon{background:#E6EDF6;color:var(--ink-faint)}
-  .menu-card .mc-open{color:var(--primary);font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
-  .menu-card.soon{opacity:.7}
+  .menu-card .mc-open{color:var(--accent);font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+  .menu-card.active{cursor:pointer}
+  .menu-card.active:hover{transform:translateY(-4px);border-color:var(--accent);
+    box-shadow:0 14px 32px color-mix(in srgb,var(--accent) 24%,transparent)}
+  .menu-card.active:hover .mc-icon{background:var(--accent);transform:scale(1.05)}
+  .menu-card.soon{opacity:.72}
+  .menu-card.soon .mc-icon{filter:grayscale(.25)}
   .view-back{margin-bottom:18px}
   .view-head{padding-bottom:18px;margin-bottom:26px;border-bottom:1px solid var(--line)}
+  .komatte-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .io-menu-wrap{position:relative}
+  .icon-btn{width:40px;height:40px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface);
+    color:var(--ink-soft);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .icon-btn:hover{border-color:var(--primary);color:var(--primary);box-shadow:0 2px 8px rgba(27,42,61,.08)}
+  .io-menu{position:absolute;right:0;top:48px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 12px 32px rgba(27,42,61,.18);padding:6px;min-width:232px;z-index:40;display:flex;flex-direction:column;gap:2px}
+  .io-menu button{display:flex;align-items:center;gap:4px;width:100%;text-align:left;border:none;background:none;
+    font-family:inherit;font-size:13.5px;font-weight:500;color:var(--ink);padding:11px 13px;border-radius:8px;cursor:pointer}
+  .io-menu button:hover{background:var(--surface-2);color:var(--primary)}
   .shared-note{display:flex;gap:8px;align-items:flex-start;background:var(--primary-tint);color:var(--primary-dark);
     border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:20px;line-height:1.6}
 
@@ -290,6 +341,8 @@
     .grid{grid-template-columns:1fr}
     .wrap{padding:20px 14px 60px}
     h1{font-size:22px}
+    .menu-hero{padding:22px 20px}
+    .menu-hero h1{font-size:24px}
     .report-top{flex-direction:column}
     .search input{min-width:0;width:100%}
     .search{flex:1}
@@ -304,27 +357,33 @@
 </style>
 
 <div class="wrap">
-  <!-- 報告メニュー（ホーム） -->
+  <!-- 考課表報告（ホーム） -->
   <div id="homeView">
-    <header class="page">
-      <div class="title-group">
-        <span class="eyebrow">社内報告</span>
-        <h1>報告メニュー</h1>
-        <span class="subtitle">報告したい項目を選んでください。社員・部署の登録は設定から行えます</span>
+    <header class="menu-hero">
+      <div class="hero-text">
+        <h1>考課表報告</h1>
       </div>
-      <button class="ghost-pill" id="openSettings">⚙ 設定</button>
+      <button class="hero-btn" id="openSettings">⚙ 設定</button>
     </header>
     <div class="menu-grid" id="menuGrid"></div>
   </div>
 
   <!-- 「困っている」報告 -->
   <div id="komatteView" hidden>
-    <button class="ghost-pill view-back" id="komatteBack">← 報告メニューに戻る</button>
-    <header class="view-head">
+    <button class="ghost-pill view-back" id="komatteBack">← 考課表報告に戻る</button>
+    <header class="view-head komatte-head">
       <div class="title-group">
         <h1>お客様の困っている情報の収集</h1>
       </div>
+      <div class="io-menu-wrap">
+        <button class="icon-btn" id="ioGear" title="インポート / エクスポート" aria-label="データのインポート・エクスポート">⚙</button>
+        <div class="io-menu" id="ioMenu" hidden>
+          <button type="button" id="ioExport">⬇　エクスポート（テンプレート）</button>
+          <button type="button" id="ioImport">⬆　インポート</button>
+        </div>
+      </div>
     </header>
+    <input type="file" id="ioFile" accept=".xlsx,.xls" hidden>
     <div id="mainView">
 
     <button class="add-toggle" id="newReportToggle">＋ 新しい報告を追加</button>
@@ -360,32 +419,25 @@
     </div>
     <div class="summary" id="summary">
       <button class="stat active" data-f="all"><span class="stat-num" data-c="all">0</span><span class="stat-label">すべて</span></button>
-      <button class="stat s-pending" data-f="保留"><span class="stat-num" data-c="保留">0</span><span class="stat-label">保留</span></button>
+      <button class="stat s-pending" data-f="進行中"><span class="stat-num" data-c="進行中">0</span><span class="stat-label">進行中</span></button>
       <button class="stat s-overdue" data-f="overdue"><span class="stat-num" data-c="overdue">0</span><span class="stat-label">期限超過</span></button>
       <button class="stat s-resolved" data-f="解決済"><span class="stat-num" data-c="解決済">0</span><span class="stat-label">解決済</span></button>
       <button class="stat s-blocked" data-f="解決不可能"><span class="stat-num" data-c="解決不可能">0</span><span class="stat-label">解決不可能</span></button>
     </div>
     <div class="list-tools">
-      <div class="sort"><span>並び替え</span>
-        <select id="sortSelect">
-          <option value="report">報告日が新しい順</option>
-          <option value="completion">完了時期が早い順</option>
-          <option value="status">対応状況順（保留を上に）</option>
-        </select>
-      </div>
-      <div class="tools-right">
+      <div class="lt-left">
+        <label class="chk prevm"><input type="checkbox" id="prevMonthChk"><span>前月までを表示</span></label>
         <div class="cat-filter" id="catFilter">
-          <span class="cf-label">カテゴリ</span>
           <label class="chk"><input type="checkbox" value="GCC案件"><span>GCC</span></label>
           <label class="chk"><input type="checkbox" value="SEI案件"><span>SEI</span></label>
           <label class="chk"><input type="checkbox" value="開発案件"><span>開発</span></label>
           <label class="chk"><input type="checkbox" value="その他"><span>他</span></label>
           <button type="button" class="cf-reset" id="catReset">リセット</button>
         </div>
-        <div class="search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input type="text" id="searchInput" placeholder="キーワードで検索">
-        </div>
+      </div>
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="キーワードで検索">
       </div>
     </div>
     <div id="listArea"><div class="loading">読み込み中…</div></div>
@@ -393,18 +445,36 @@
   </div>
 
   <!-- 設定画面（全報告で共通） -->
+  <div id="moduleView" hidden></div>
   <div id="settingsView" hidden>
-    <button class="ghost-pill view-back" id="backToMain">← 報告メニューに戻る</button>
+    <button class="ghost-pill view-back" id="backToMain">← 考課表報告に戻る</button>
     <header class="view-head">
       <div class="title-group">
         <span class="eyebrow">設定</span>
         <h1>設定</h1>
-        <span class="subtitle">報告メニューの記載内容の編集と、全報告で共通の社員・部署の管理を行います</span>
+        <span class="subtitle">考課表報告の記載内容の編集と、全報告で共通の社員・部署の管理を行います</span>
       </div>
     </header>
 
     <section class="panel">
-      <div class="panel-head"><span class="mark"></span><h2>報告メニューの編集</h2><span class="note">各項目の名称・説明</span></div>
+      <div class="panel-head"><span class="mark"></span><h2>データの保存先</h2><span class="note">Google スプレッドシート連携</span></div>
+      <div class="panel-body">
+        <p class="sheets-status" id="sheetsStatus"></p>
+        <div class="grid">
+          <div class="field full"><label for="sheetsUrl">ウェブアプリのURL</label><input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div class="field full"><label for="sheetsToken">合言葉（TOKEN）</label><input type="text" id="sheetsToken" placeholder="スクリプトの TOKEN と同じ値"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="sheetsTest">接続テスト</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="sheetsClear">連携を解除</button>
+          <button type="button" class="btn btn-primary btn-sm" id="sheetsSave">保存して接続</button>
+        </div>
+        <p class="sheets-hint">空欄のまま保存すると、この端末内に保存します。入力して保存するとGoogleスプレッドシートに保存・共有されます。URL・合言葉は社内のみで共有してください。</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><span class="mark"></span><h2>考課表報告の編集</h2><span class="note">各項目の名称・説明</span></div>
       <div class="panel-body">
         <div class="set-list" id="menuEditList"></div>
       </div>
@@ -457,8 +527,38 @@
   }
 
   var DEPT_KEY="config:departments",EMP_KEY="config:employees",DATA_KEY="data:reports";
+  /* ===== Google スプレッドシート連携設定 ===== */
+  /* 公開した「ウェブアプリのURL」と「合言葉(TOKEN)」を下に貼り付けてください。
+     両方を入れるとデータはスプレッドシートに保存・共有されます（空ならこの端末内に保存）。 */
+  var SHEETS={
+    url:"",     /* 例: "https://script.google.com/macros/s/AKfy.../exec" */
+    token:""    /* 例: "komatte-7f3a9b"（スクリプトの TOKEN と同じ値） */
+  };
+  function remoteOn(){return !!(SHEETS.url&&SHEETS.token);}
+  function loadSheetsCfg(){try{var s=localStorage.getItem("config:sheets");if(s){var o=JSON.parse(s)||{};if(o.url)SHEETS.url=o.url;if(o.token)SHEETS.token=o.token;}}catch(e){}}
+  function saveSheetsCfg(){try{localStorage.setItem("config:sheets",JSON.stringify({url:SHEETS.url,token:SHEETS.token}));}catch(e){}}
+  var KOMATTE_SHEET="困っている",EMP_SHEET="社員",DEPT_SHEET="部署";
+  var MOD_SHEET={kaizen:"改善改良",study:"勉強会研修会",failure:"失敗事例",reading:"読書資格",thanks:"感謝の言葉",growth:"社員成長支援"};
+  var MOD_COLS={
+    kaizen:{reportDate:"報告日",person:"提案者",item:"改良改善提案項目",current:"現状",toward:"改善に向けて",result:"改善の結果",done:"改善済"},
+    study:{reportDate:"開催日",person:"企画者",participants:"参加者",content:"企画・参加内容",detail:"詳細"},
+    failure:{reportDate:"報告日",person:"報告者",caseTitle:"失敗事例",caseDetail:"事例詳細",cause:"主要原因",solution:"解決策",implementers:"実施担当者",completion:"完了時期",done:"対策済"},
+    reading:{reportDate:"報告日",kind:"項目",person:"名前",title:"書籍名・資格取得内容",detail:"詳細"},
+    thanks:{reportDate:"報告日",person:"報告者",thankedPeople:"感謝を受けた人",customer:"お客様の情報",detail:"詳細"},
+    growth:{reportDate:"実施日",person:"報告者",item:"利用品目",useDetail:"利用詳細",effect:"学んだ内容・得られた効果（利用後の効果）"}
+  };
+  async function sheetLoad(sheet){var u=SHEETS.url+"?action=load&sheet="+encodeURIComponent(sheet)+"&token="+encodeURIComponent(SHEETS.token);var res=await fetch(u);var d=await res.json();if(!d.ok)throw new Error(d.error||"load error");return d.rows||[];}
+  async function sheetSave(sheet,header,rows){var res=await fetch(SHEETS.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"save",token:SHEETS.token,sheet:sheet,header:header,rows:rows})});var d=await res.json();if(!d.ok)throw new Error(d.error||"save error");return d;}
+  function modPersonName(id,snap){if(id){var e=state.employees.find(function(x){return x.id===id;});if(e)return e.name;}return snap||"";}
+  function modPeopleNames(ids){return (ids||[]).map(function(id){var e=state.employees.find(function(x){return x.id===id;});return e?e.name:"";}).filter(Boolean).join("、");}
+  function empIdByName(n){n=(n||"").replace(/（[^）]*）|\([^)]*\)/,"").trim();var e=state.employees.find(function(x){return x.name===n;});return e?e.id:"";}
+  function modSheetHeader(cfg){return cfg.fields.map(function(f){return MOD_COLS[cfg.key][f.k];});}
+  function modRecToRow(cfg,rec){var cols=MOD_COLS[cfg.key];var row={};cfg.fields.forEach(function(f){var col=cols[f.k];var v=rec[f.k];if(f.type==="person")row[col]=modPersonName(rec[f.k],rec[f.k+"_snap"]);else if(f.type==="people")row[col]=modPeopleNames(rec[f.k]);else if(f.type==="check")row[col]=v?"○":"";else row[col]=(v==null?"":v);});return row;}
+  function modRowToRec(cfg,row){var cols=MOD_COLS[cfg.key];var rec={id:uid(),createdAt:Date.now()+Math.floor(Math.random()*100000)};cfg.fields.forEach(function(f){var col=cols[f.k];var raw=row[col];var s=(raw==null?"":String(raw)).trim();if(f.type==="person"){var id=empIdByName(s);rec[f.k]=id;rec[f.k+"_snap"]=id?"":s;}else if(f.type==="people"){rec[f.k]=s.split(/[、,\/]/).map(function(t){return t.trim();}).filter(Boolean).map(function(n){return empIdByName(n);}).filter(Boolean);}else if(f.type==="check"){rec[f.k]=(s==="○"||s==="✓"||s==="レ"||s.toLowerCase()==="true"||s==="1"||s==="はい");}else if(f.type==="date"){rec[f.k]=normDate(raw);}else if(f.type==="month"){rec[f.k]=normMonth(raw);}else{rec[f.k]=s;}});return rec;}
+  function komatteToRow(r){var p=resolveProposer(r);var cats=Array.isArray(r.category)?r.category:(r.category?[r.category]:[]);return {"報告日":r.reportDate||"","提案者":p.name||"","部署":p.dept||"","お客様の困っている情報":r.customerIssue||"","情報の詳細":r.detail||"","解決策":r.solution||"","実施担当者":(r.implementers||[]).join("、"),"完了時期":r.completionDate||"","備考":r.completionNote||"","カテゴリ":cats.join("、"),"対応状況":r.status||""};}
+  function komatteFromRow(row){var nm=String(row["提案者"]||"").trim();var emp=state.employees.find(function(x){return x.name===nm;});var cats=String(row["カテゴリ"]||"").split(/[、,\/]/).map(function(s){return s.trim();}).filter(Boolean);var imp=String(row["実施担当者"]||"").split(/[、,\/]/).map(function(s){return s.trim();}).filter(Boolean);var st=String(row["対応状況"]||"").trim();if(["進行中","解決済","解決不可能"].indexOf(st)===-1)st="進行中";return {id:uid(),createdAt:Date.now()+Math.floor(Math.random()*100000),reportDate:normDate(row["報告日"]),proposerId:emp?emp.id:"",proposerName:emp?emp.name:nm,proposerDeptName:emp?deptName(emp.deptId):String(row["部署"]||"").trim(),customerIssue:String(row["お客様の困っている情報"]||"").trim(),detail:String(row["情報の詳細"]||"").trim(),solution:String(row["解決策"]||"").trim(),implementers:imp,completionDate:normMonth(row["完了時期"]),completionNote:String(row["備考"]||"").trim(),category:cats,status:st};}
   var DEFAULT_DEPTS=["営業部","カスタマーサポート部","技術部","製造部","総務部"];
-  var state={departments:[],employees:[],reports:[],filter:"all",search:"",sort:"report",catFilter:[]};
+  var state={departments:[],employees:[],reports:[],filter:"all",search:"",sort:"report",catFilter:[],prevOnly:false};
   var editingDeptId=null,editingEmpId=null;
 
   function $(s){return document.querySelector(s);}
@@ -468,14 +568,14 @@
   function fmtDate(iso){if(!iso)return "";var p=iso.split("-");if(p.length!==3)return iso;return p[0]+"/"+p[1]+"/"+p[2];}
   function fmtMonth(iso){if(!iso)return "";var p=iso.split("-");if(p.length<2)return iso;return p[0]+"年"+parseInt(p[1],10)+"月";}
   function curMonthStr(){var n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0");}
-  function isOverdue(r){return r.status==="保留"&&r.completionDate&&r.completionDate.slice(0,7)<curMonthStr();}
+  function isOverdue(r){return r.status==="進行中"&&r.completionDate&&r.completionDate.slice(0,7)<curMonthStr();}
   function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
   var toastTimer;
   function toast(m){var t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove("show");},2200);}
 
-  async function persistDepts(){await sset(DEPT_KEY,JSON.stringify(state.departments));}
-  async function persistEmps(){await sset(EMP_KEY,JSON.stringify(state.employees));}
-  async function persistReports(){return await sset(DATA_KEY,JSON.stringify(state.reports));}
+  async function persistDepts(){if(remoteOn()){try{return await sheetSave(DEPT_SHEET,["部署名"],state.departments.map(function(d){return {"部署名":d.name};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(DEPT_KEY,JSON.stringify(state.departments));}
+  async function persistEmps(){if(remoteOn()){try{return await sheetSave(EMP_SHEET,["名前","部署"],state.employees.map(function(e){return {"名前":e.name,"部署":deptName(e.deptId)};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(EMP_KEY,JSON.stringify(state.employees));}
+  async function persistReports(){if(remoteOn()){try{return await sheetSave(KOMATTE_SHEET,IO_HEADER,state.reports.map(komatteToRow));}catch(e){toast("保存に失敗しました（接続を確認）");throw e;}}return await sset(DATA_KEY,JSON.stringify(state.reports));}
 
   function deptName(id){var d=state.departments.find(function(x){return x.id===id;});return d?d.name:"";}
   function resolveProposer(r){
@@ -506,7 +606,7 @@
   /* ---- inline editor state & helpers ---- */
   var openEditorId=null;            // 編集中の報告ID（1件のみ展開）
   var implementers=[];              // 編集中カードの担当者
-  var curTagbox=null,curTagInput=null,curStatusWrap=null,curStatus="保留";
+  var curTagbox=null,curTagInput=null,curStatusWrap=null,curStatus="進行中";
 
   function clearEditorRefs(){curTagbox=null;curTagInput=null;curStatusWrap=null;implementers=[];}
   function renderTags(){
@@ -546,6 +646,7 @@
       var rc=Array.isArray(r.category)?r.category:(r.category?[r.category]:[]);
       if(!state.catFilter.some(function(c){return rc.indexOf(c)!==-1;}))return false;
     }
+    if(state.prevOnly){var rm=(r.reportDate||"").slice(0,7);if(!rm||rm>=curMonthStr())return false;}
     return true;
   }
   function sortReports(arr){
@@ -556,13 +657,13 @@
         if(!cx)return 1;if(!cy)return -1;
         return cx.localeCompare(cy)||(y.reportDate||"").localeCompare(x.reportDate||"");});
     }else if(state.sort==="status"){
-      var ord={"保留":0,"解決不可能":1,"解決済":2};
+      var ord={"進行中":0,"解決不可能":1,"解決済":2};
       a.sort(function(x,y){var ox=ord[x.status]==null?3:ord[x.status],oy=ord[y.status]==null?3:ord[y.status];
         if(ox!==oy)return ox-oy;
         var dx=isOverdue(x)?0:1,dy=isOverdue(y)?0:1;if(dx!==dy)return dx-dy;
         return (y.reportDate||"").localeCompare(x.reportDate||"");});
     }else{
-      a.sort(function(x,y){return (y.reportDate||"").localeCompare(x.reportDate||"")||(y.createdAt||0)-(x.createdAt||0);});
+      a.sort(function(x,y){return (x.reportDate||"").localeCompare(y.reportDate||"")||(x.createdAt||0)-(y.createdAt||0);});
     }
     return a;
   }
@@ -601,7 +702,7 @@
     fCat.appendChild(catLabel);fCat.appendChild(catBox);
     var fStat=el("div","field full");var statLabel=el("label");statLabel.innerHTML='対応状況<span class="req">*</span>';
     curStatusWrap=el("div","status-seg");
-    ["解決済","保留","解決不可能"].forEach(function(s){
+    ["解決済","進行中","解決不可能"].forEach(function(s){
       var lab=el("label");lab.dataset.status=s;var span=el("span");span.textContent=s;lab.appendChild(span);
       lab.onclick=function(){curStatus=s;applyStatusVisual();};curStatusWrap.appendChild(lab);
     });
@@ -622,7 +723,7 @@
       if(ev.key==="Enter"||ev.key===","){ev.preventDefault();addImplementer();}
       else if(ev.key==="Backspace"&&!curTagInput.value&&implementers.length){implementers.pop();renderTags();}});
     implementers=(r.implementers||[]).slice();renderTags();
-    curStatus=r.status||"保留";applyStatusVisual();
+    curStatus=r.status||"進行中";applyStatusVisual();
 
     cancel.onclick=function(){openEditorId=null;clearEditorRefs();renderList();};
     save.onclick=async function(){
@@ -643,9 +744,9 @@
   }
 
   function renderSummary(){
-    var c={all:state.reports.length,"保留":0,overdue:0,"解決済":0,"解決不可能":0};
+    var c={all:state.reports.length,"進行中":0,overdue:0,"解決済":0,"解決不可能":0};
     state.reports.forEach(function(r){
-      if(r.status==="保留")c["保留"]++;else if(r.status==="解決済")c["解決済"]++;else if(r.status==="解決不可能")c["解決不可能"]++;
+      if(r.status==="進行中")c["進行中"]++;else if(r.status==="解決済")c["解決済"]++;else if(r.status==="解決不可能")c["解決不可能"]++;
       if(isOverdue(r))c.overdue++;
     });
     Object.keys(c).forEach(function(k){var el2=document.querySelector('#summary .stat-num[data-c="'+k+'"]');if(el2)el2.textContent=c[k];});
@@ -719,7 +820,7 @@
     var data={reportDate:$("#reportDate").value,
       proposerId:emp.id,proposerName:emp.name,proposerDeptName:deptName(emp.deptId),
       customerIssue:$("#customerIssue").value.trim(),detail:$("#detail").value.trim(),
-      solution:"",implementers:[],completionDate:"",completionNote:"",category:[],status:"保留"};
+      solution:"",implementers:[],completionDate:"",completionNote:"",category:[],status:"進行中"};
     if(!data.reportDate||!data.customerIssue){toast("必須項目（*）を入力してください");return;}
     data.id=uid();data.createdAt=Date.now();
     state.reports.push(data);
@@ -888,27 +989,192 @@
   /* ---- report menu (home) ---- */
   var MENU_KEY="config:menu";
   var DEFAULT_MENU=[
-    {key:"kaizen",name:"改善改良",desc:"業務やサービスの改善・改良の提案を記録します。",ready:false},
-    {key:"study",name:"勉強会・研修会",desc:"勉強会や研修会の内容・気づきを共有します。",ready:false},
-    {key:"failure",name:"失敗事例",desc:"失敗から学んだ事例をチームで共有します。",ready:false},
-    {key:"thanks",name:"感謝の言葉",desc:"お客様や社内から寄せられた感謝の声を残します。",ready:false},
-    {key:"reading",name:"読書 / 資格",desc:"読んだ本や取得した資格を記録します。",ready:false},
-    {key:"komatte",name:"困っている",desc:"お客様が困っている情報を記録し、対応状況を管理します。",ready:true},
-    {key:"growth",name:"社員成長支援",desc:"社員の成長を支援する取り組みを記録します。",ready:false}
+    {key:"kaizen",name:"改善改良",desc:"業務やサービスの改善・改良の提案を記録します。",ready:true,accent:"#2E9E6B",icon:"📈"},
+    {key:"study",name:"勉強会・研修会",desc:"勉強会や研修会の内容・気づきを共有します。",ready:true,accent:"#5B5BD6",icon:"📚"},
+    {key:"failure",name:"失敗事例",desc:"失敗から学んだ事例をチームで共有します。",ready:true,accent:"#D97706",icon:"⚠️"},
+    {key:"thanks",name:"感謝の言葉",desc:"お客様や社内から寄せられた感謝の声を残します。",ready:true,accent:"#E0568A",icon:"🙏"},
+    {key:"reading",name:"読書 / 資格",desc:"読んだ本や取得した資格を記録します。",ready:true,accent:"#0E9AA7",icon:"📖"},
+    {key:"komatte",name:"困っている",desc:"お客様が困っている情報を記録し、対応状況を管理します。",ready:true,accent:"#2563EB",icon:"🤝"},
+    {key:"growth",name:"社員成長支援",desc:"社員の成長を支援する取り組みを記録します。",ready:true,accent:"#8B5CF6",icon:"🌱"}
   ];
   var editingMenuKey=null;
   function persistMenu(){return sset(MENU_KEY,JSON.stringify(state.menu.map(function(m){return {key:m.key,name:m.name,desc:m.desc};})));}
+  /* ====== 汎用レポートモジュール（他項目） ====== */
+  var MOD_CFGS={
+    kaizen:{key:"kaizen",title:"改善改良",accent:"#2E9E6B",dark:"#237A52",tint:"#E3F3EC",bg:"#EFF7F2",addLabel:"＋ 改善改良を追加",
+      fields:[
+        {k:"reportDate",label:"報告日",type:"date",req:true},
+        {k:"person",label:"提案者",type:"person",req:true},
+        {k:"item",label:"改良改善提案項目",type:"text",full:true,ph:"例：マニュアル作成",req:true},
+        {k:"current",label:"現状",type:"textarea",full:true,ph:"例：手順が共有されておらず、対応できる人が限られていた。"},
+        {k:"toward",label:"改善に向けて",type:"textarea",full:true,ph:"例：新しくマニュアルを作成しました。"},
+        {k:"result",label:"改善の結果",type:"textarea",full:true,ph:"例：担当者以外や新人も対応可能になりました。"},
+        {k:"done",label:"改善済（改善が完了している場合）",type:"check",full:true}
+      ]},
+    study:{key:"study",title:"勉強会・研修会",accent:"#5B6BD6",dark:"#4450B0",tint:"#E9EBFA",bg:"#F1F2FB",addLabel:"＋ 勉強会・研修会を追加",
+      fields:[
+        {k:"reportDate",label:"開催日",type:"date",req:true},
+        {k:"person",label:"企画者",type:"person",req:true},
+        {k:"participants",label:"参加者",type:"people",full:true},
+        {k:"content",label:"企画・参加内容",type:"text",full:true,req:true},
+        {k:"detail",label:"詳細",type:"textarea",full:true}
+      ]},
+    failure:{key:"failure",title:"失敗事例",accent:"#D9883C",dark:"#B36A22",tint:"#FBEFE0",bg:"#FBF4EC",addLabel:"＋ 失敗事例を追加",
+      fields:[
+        {k:"reportDate",label:"報告日",type:"date",req:true},
+        {k:"person",label:"報告者",type:"person",req:true},
+        {k:"caseTitle",label:"失敗事例",type:"text",full:true,ph:"例：現金不足",req:true},
+        {k:"caseDetail",label:"事例詳細",type:"textarea",full:true,ph:"例：駐車場の精算時にカードが利用できず、現金も不足していた。"},
+        {k:"cause",label:"主要原因",type:"text",full:true,ph:"例：準備不足"},
+        {k:"solution",label:"解決策",type:"textarea",full:true,ph:"例：車の中に一定額の現金を常に携帯しておく。"},
+        {k:"implementers",label:"実施担当者",type:"people",full:true},
+        {k:"completion",label:"完了時期",type:"month"},
+        {k:"done",label:"対策済",type:"check",full:true}
+      ]},
+    reading:{key:"reading",title:"読書 / 資格",accent:"#2AA4A0",dark:"#1E807D",tint:"#E2F4F3",bg:"#EEF8F7",addLabel:"＋ 読書 / 資格を追加",
+      fields:[
+        {k:"reportDate",label:"報告日",type:"date",req:true},
+        {k:"kind",label:"項目",type:"select",options:["読書","資格"],req:true},
+        {k:"person",label:"名前",type:"person",req:true},
+        {k:"title",label:"書籍名・資格取得内容",type:"text",full:true,req:true},
+        {k:"detail",label:"詳細（感想や詳細）",type:"textarea",full:true}
+      ]},
+    thanks:{key:"thanks",title:"感謝の言葉",accent:"#E0568A",dark:"#B83E6E",tint:"#FBE7EF",bg:"#FCF1F5",addLabel:"＋ 感謝の言葉を追加",
+      fields:[
+        {k:"reportDate",label:"報告日",type:"date",req:true},
+        {k:"person",label:"報告者",type:"person",req:true},
+        {k:"thankedPeople",label:"感謝を受けた人",type:"people",full:true},
+        {k:"customer",label:"お客様の情報",type:"text",full:true,ph:"例：コムネット株式会社　〇〇さま",req:true},
+        {k:"detail",label:"詳細",type:"textarea",full:true}
+      ]},
+    growth:{key:"growth",title:"社員成長支援",accent:"#8B5CF6",dark:"#6D44C9",tint:"#EFE9FB",bg:"#F5F1FC",addLabel:"＋ 社員成長支援を追加",
+      fields:[
+        {k:"reportDate",label:"実施日",type:"date",req:true},
+        {k:"person",label:"報告者",type:"person",req:true},
+        {k:"item",label:"利用品目",type:"text",full:true,req:true},
+        {k:"useDetail",label:"利用詳細",type:"textarea",full:true},
+        {k:"effect",label:"学んだ内容・得られた効果（利用後の効果）",type:"textarea",full:true}
+      ]}
+  };
+  var MOD_DATA={}, MOD_UI={key:null,search:"",editId:null};
+  function modStoreKey(k){return "data:reports:"+k;}
+  async function loadMod(k){
+    if(MOD_DATA[k]&&!remoteOn())return;
+    if(remoteOn()){try{var rows=await sheetLoad(MOD_SHEET[k]);var cfg=MOD_CFGS[k];MOD_DATA[k]=rows.map(function(row){return modRowToRec(cfg,row);});}catch(e){MOD_DATA[k]=MOD_DATA[k]||[];toast("読み込みに失敗しました（接続を確認）");}return;}
+    var r=await sget(modStoreKey(k));
+    if(r&&r.value){try{MOD_DATA[k]=JSON.parse(r.value)||[];}catch(e){MOD_DATA[k]=[];}}else MOD_DATA[k]=[];
+  }
+  async function persistMod(k){if(remoteOn()){var cfg=MOD_CFGS[k];try{return await sheetSave(MOD_SHEET[k],modSheetHeader(cfg),(MOD_DATA[k]||[]).map(function(rec){return modRecToRow(cfg,rec);}));}catch(e){toast("保存に失敗しました（接続を確認）");throw e;}}return await sset(modStoreKey(k),JSON.stringify(MOD_DATA[k]||[]));}
+  function modThemeApply(cfg){var v=$("#moduleView");v.style.setProperty("--primary",cfg.accent);v.style.setProperty("--primary-dark",cfg.dark);v.style.setProperty("--primary-tint",cfg.tint);document.body.style.background=cfg.bg;}
+  function modPersonLabel(id,snap){if(id){var e=state.employees.find(function(x){return x.id===id;});if(e)return e.name+"（"+deptName(e.deptId)+"）";}return snap||"";}
+  function modPeopleLabels(ids){return (ids||[]).map(function(id){var e=state.employees.find(function(x){return x.id===id;});return e?e.name:"";}).filter(Boolean).join("、");}
+  function modEmployeeSelect(selId){var sel=el("select");if(state.employees.length===0){var o=el("option");o.value="";o.textContent="（設定で社員を登録してください）";sel.appendChild(o);return sel;}var ph=el("option");ph.value="";ph.textContent="選択してください";sel.appendChild(ph);state.employees.forEach(function(e){var o=el("option");o.value=e.id;o.textContent=e.name+"（"+deptName(e.deptId)+"）";if(e.id===selId)o.selected=true;sel.appendChild(o);});return sel;}
+  function modDownscale(file,cb){var fr=new FileReader();fr.onload=function(){var img=new Image();img.onload=function(){var max=1200,w=img.width,h=img.height;if(w>max||h>max){if(w>=h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}var c=el("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);try{cb(c.toDataURL("image/jpeg",0.72));}catch(e){cb(fr.result);}};img.onerror=function(){cb(fr.result);};img.src=fr.result;};fr.readAsDataURL(file);}
+  function modOpenImg(src){var ov=el("div","img-overlay");ov.onclick=function(){document.body.removeChild(ov);};var im=el("img");im.src=src;ov.appendChild(im);document.body.appendChild(ov);}
+  function buildModForm(cfg,rec){
+    var grid=el("div","grid");var getters=[];var imgState={};
+    cfg.fields.forEach(function(f){
+      var field=el("div","field"+(f.full?" full":""));
+      var lab=el("label");lab.innerHTML=esc(f.label)+(f.req?'<span class="req">*</span>':"");
+      var inp;
+      if(f.type==="check"){var wc=el("label","mod-check");var cb=el("input");cb.type="checkbox";if(rec&&rec[f.k])cb.checked=true;var sp=el("span");sp.textContent=f.label;wc.appendChild(cb);wc.appendChild(sp);field.appendChild(wc);getters.push({k:f.k,fn:function(){return cb.checked;}});grid.appendChild(field);return;}
+      if(f.type==="people"){var box=el("div","mod-people");if(state.employees.length===0){var n=el("div","mod-people-empty");n.textContent="設定で社員を登録してください";box.appendChild(n);}var chosen=(rec&&Array.isArray(rec[f.k]))?rec[f.k].slice():[];state.employees.forEach(function(e){var li=el("label","chk"+(chosen.indexOf(e.id)!==-1?" on":""));var cb=el("input");cb.type="checkbox";cb.value=e.id;cb.checked=chosen.indexOf(e.id)!==-1;cb.addEventListener("change",function(){li.classList.toggle("on",cb.checked);});var sp=el("span");sp.textContent=e.name;li.appendChild(cb);li.appendChild(sp);box.appendChild(li);});field.appendChild(lab);field.appendChild(box);getters.push({k:f.k,fn:function(){return Array.prototype.slice.call(box.querySelectorAll("input:checked")).map(function(x){return x.value;});}});grid.appendChild(field);return;}
+      if(f.type==="image"){var ibox=el("div","mod-img");imgState[f.k]=rec?(rec[f.k]||""):"";var prev=el("div","mod-img-prev");function refresh(){prev.innerHTML="";if(imgState[f.k]){var im=el("img");im.src=imgState[f.k];im.onclick=function(){modOpenImg(imgState[f.k]);};prev.appendChild(im);var rm=el("button","mini-btn");rm.type="button";rm.textContent="画像を削除";rm.onclick=function(){imgState[f.k]="";refresh();};prev.appendChild(rm);}}var file=el("input");file.type="file";file.accept="image/*";file.addEventListener("change",function(ev){var fo=ev.target.files&&ev.target.files[0];if(fo)modDownscale(fo,function(d){imgState[f.k]=d;refresh();});ev.target.value="";});field.appendChild(lab);field.appendChild(file);field.appendChild(prev);refresh();getters.push({k:f.k,fn:function(){return imgState[f.k]||"";}});grid.appendChild(field);return;}
+      if(f.type==="textarea"){inp=el("textarea");if(f.ph)inp.placeholder=f.ph;if(rec)inp.value=rec[f.k]||"";}
+      else if(f.type==="select"){inp=el("select");var p0=el("option");p0.value="";p0.textContent="選択してください";inp.appendChild(p0);(f.options||[]).forEach(function(op){var o=el("option");o.value=op;o.textContent=op;if(rec&&rec[f.k]===op)o.selected=true;inp.appendChild(o);});}
+      else if(f.type==="person"){inp=modEmployeeSelect(rec?rec[f.k]:"");}
+      else if(f.type==="date"){inp=el("input");inp.type="date";if(rec)inp.value=rec[f.k]||"";}
+      else if(f.type==="month"){inp=el("input");inp.type="month";if(rec)inp.value=rec[f.k]||"";}
+      else{inp=el("input");inp.type="text";if(f.ph)inp.placeholder=f.ph;if(rec)inp.value=rec[f.k]||"";}
+      field.appendChild(lab);field.appendChild(inp);grid.appendChild(field);
+      getters.push({k:f.k,fn:function(){return typeof inp.value==="string"?inp.value.trim():inp.value;}});
+    });
+    function read(){var o={};getters.forEach(function(g){o[g.k]=g.fn();});return o;}
+    function validate(o){for(var i=0;i<cfg.fields.length;i++){var f=cfg.fields[i];if(f.req){var v=o[f.k];if(!v||(Array.isArray(v)&&!v.length)){toast(f.label+"を入力してください");return false;}}}return true;}
+    return {wrap:grid,read:read,validate:validate};
+  }
+  function modRow(label,val,multiline){var row=el("div","mcard-row");var l=el("div","mcard-l");l.textContent=label;var v;if(typeof val==="string"){v=el("div","mcard-v"+(multiline?" ml":""));v.textContent=val;}else{v=el("div","mcard-v");v.appendChild(val);}row.appendChild(l);row.appendChild(v);return row;}
+  function modCardEl(cfg,rec){
+    var card=el("div","mcard");card.style.borderLeftColor=cfg.accent;
+    var body=el("div","mcard-body");
+    cfg.fields.forEach(function(f){
+      var val=rec[f.k];
+      if(f.type==="check"){if(val){var b=el("span","mod-badge");b.textContent=f.label.replace(/（.*）/,"");b.style.background=cfg.tint;b.style.color=cfg.dark;body.appendChild(modRow(f.label,b,false));}return;}
+      if(f.type==="image"){if(val){var im=el("img","mcard-thumb");im.src=val;im.onclick=function(){modOpenImg(val);};body.appendChild(modRow(f.label,im,false));}return;}
+      var disp="";
+      if(f.type==="person")disp=modPersonLabel(rec[f.k],rec[f.k+"_snap"]);
+      else if(f.type==="people")disp=modPeopleLabels(val);
+      else if(f.type==="date")disp=fmtDate(val);
+      else if(f.type==="month")disp=fmtMonth(val);
+      else disp=val||"";
+      if(!disp)return;
+      body.appendChild(modRow(f.label,disp,f.type==="textarea"));
+    });
+    var act=el("div","mcard-act");
+    var edit=el("button","mini-btn");edit.type="button";edit.textContent="編集";edit.onclick=function(){MOD_UI.editId=rec.id;renderModList();};
+    var del=el("button","mini-btn danger");del.type="button";del.textContent="削除";del.onclick=function(){if(!confirm("この報告を削除しますか？"))return;var k=MOD_UI.key;MOD_DATA[k]=MOD_DATA[k].filter(function(x){return x.id!==rec.id;});persistMod(k).then(function(){renderModList();toast("削除しました");});};
+    act.appendChild(edit);act.appendChild(del);
+    card.appendChild(body);card.appendChild(act);return card;
+  }
+  function modEditCard(cfg,rec){
+    var card=el("div","mcard editing");card.style.borderLeftColor=cfg.accent;
+    var form=buildModForm(cfg,rec);
+    var actions=el("div","form-actions");
+    var save=el("button","btn btn-primary btn-sm");save.type="button";save.textContent="更新";
+    var cancel=el("button","btn btn-ghost btn-sm");cancel.type="button";cancel.textContent="取消";
+    save.onclick=function(){var o=form.read();if(!form.validate(o))return;cfg.fields.forEach(function(f){if(f.type==="person")o[f.k+"_snap"]=modPersonLabel(o[f.k]);});o.id=rec.id;o.createdAt=rec.createdAt;var k=cfg.key;var idx=MOD_DATA[k].findIndex(function(x){return x.id===rec.id;});if(idx>=0)MOD_DATA[k][idx]=o;persistMod(k).then(function(){MOD_UI.editId=null;renderModList();toast("更新しました");});};
+    cancel.onclick=function(){MOD_UI.editId=null;renderModList();};
+    actions.appendChild(save);actions.appendChild(cancel);
+    card.appendChild(form.wrap);card.appendChild(actions);return card;
+  }
+  function modHay(cfg,r){var parts=[];cfg.fields.forEach(function(f){if(f.type==="person")parts.push(modPersonLabel(r[f.k],r[f.k+"_snap"]));else if(f.type==="people")parts.push(modPeopleLabels(r[f.k]));else if(f.type==="image"||f.type==="check"){}else parts.push(r[f.k]||"");});return parts.join(" ").toLowerCase();}
+  function renderModList(){
+    var cfg=MOD_CFGS[MOD_UI.key];var wrap=$("#modList");if(!wrap)return;wrap.innerHTML="";
+    var arr=(MOD_DATA[cfg.key]||[]).slice();var q=MOD_UI.search.toLowerCase();
+    if(q)arr=arr.filter(function(r){return modHay(cfg,r).indexOf(q)!==-1;});
+    arr.sort(function(x,y){return (x.reportDate||"").localeCompare(y.reportDate||"")||(x.createdAt||0)-(y.createdAt||0);});
+    var lh=el("div","list-head");lh.innerHTML='<h2>一覧<span class="count">'+arr.length+'件</span></h2>';wrap.appendChild(lh);
+    if(arr.length===0){var e=el("div","empty");e.textContent=q?"該当する報告がありません":"まだ報告がありません。上のボタンから登録できます。";wrap.appendChild(e);return;}
+    var cards=el("div","cards");
+    arr.forEach(function(rec){cards.appendChild(MOD_UI.editId===rec.id?modEditCard(cfg,rec):modCardEl(cfg,rec));});
+    wrap.appendChild(cards);
+  }
+  function renderModule(cfg){
+    var v=$("#moduleView");v.innerHTML="";
+    var back=el("button","ghost-pill view-back");back.textContent="← 考課表報告に戻る";back.onclick=showHome;
+    var head=el("header","view-head");var tg=el("div","title-group");var h1=el("h1");h1.textContent=cfg.title;tg.appendChild(h1);head.appendChild(tg);
+    var toggle=el("button","add-toggle");toggle.type="button";toggle.textContent=cfg.addLabel;
+    var panel=el("section","panel");panel.hidden=true;
+    var ph=el("div","panel-head");ph.innerHTML='<span class="mark"></span><h2>新規追加</h2>';
+    var pb=el("div","panel-body");var form=buildModForm(cfg,null);
+    var actions=el("div","form-actions");var saveBtn=el("button","btn btn-primary");saveBtn.type="button";saveBtn.textContent="保存";actions.appendChild(saveBtn);
+    pb.appendChild(form.wrap);pb.appendChild(actions);panel.appendChild(ph);panel.appendChild(pb);
+    toggle.onclick=function(){panel.hidden=!panel.hidden;toggle.classList.toggle("open",!panel.hidden);toggle.textContent=panel.hidden?cfg.addLabel:"× 閉じる";};
+    saveBtn.onclick=function(){var o=form.read();if(!form.validate(o))return;cfg.fields.forEach(function(f){if(f.type==="person")o[f.k+"_snap"]=modPersonLabel(o[f.k]);});o.id=uid();o.createdAt=Date.now();MOD_DATA[cfg.key].push(o);persistMod(cfg.key).then(function(){renderModule(cfg);toast("保存しました");});};
+    var tools=el("div","list-tools");var search=el("div","search");
+    search.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>';
+    var sinp=el("input");sinp.type="text";sinp.placeholder="キーワードで検索";sinp.value=MOD_UI.search;sinp.addEventListener("input",function(){MOD_UI.search=sinp.value.trim();renderModList();});
+    search.appendChild(sinp);tools.appendChild(search);
+    var listWrap=el("div");listWrap.id="modList";
+    v.appendChild(back);v.appendChild(head);v.appendChild(toggle);v.appendChild(panel);v.appendChild(tools);v.appendChild(listWrap);
+    renderModList();
+  }
+  async function showModule(key){var cfg=MOD_CFGS[key];if(!cfg)return;hideAllViews();$("#moduleView").hidden=false;MOD_UI={key:key,search:"",editId:null};modThemeApply(cfg);await loadMod(key);renderModule(cfg);window.scrollTo({top:0,behavior:"smooth"});}
+
   function renderMenu(){
     var grid=$("#menuGrid");grid.innerHTML="";
     state.menu.forEach(function(rp){
       var card=el("div","menu-card"+(rp.ready?" active":" soon"));
-      card.innerHTML='<div class="mc-name">'+esc(rp.name)+'</div>'+
+      card.style.setProperty("--accent",rp.accent||"#2563EB");
+      card.innerHTML='<div class="mc-icon">'+(rp.icon||"📄")+'</div>'+
+        '<div class="mc-name">'+esc(rp.name)+'</div>'+
         '<div class="mc-desc">'+esc(rp.desc)+'</div>'+
         '<div class="mc-foot">'+
           (rp.ready?'<span class="menu-badge ready">利用できます</span><span class="mc-open">開く →</span>'
                    :'<span class="menu-badge soon">準備中</span>')+
         '</div>';
       if(rp.ready&&rp.key==="komatte")card.onclick=showKomatte;
+      else if(rp.ready&&MOD_CFGS[rp.key])card.onclick=(function(k){return function(){showModule(k);};})(rp.key);
       else if(!rp.ready)card.onclick=function(){toast("「"+rp.name+"」は準備中です");};
       grid.appendChild(card);
     });
@@ -942,26 +1208,97 @@
   }
 
   /* ---- view toggle (home / komatte / settings) ---- */
-  function hideAllViews(){$("#homeView").hidden=true;$("#komatteView").hidden=true;$("#settingsView").hidden=true;}
+  function hideAllViews(){$("#homeView").hidden=true;$("#komatteView").hidden=true;$("#settingsView").hidden=true;var mv=$("#moduleView");if(mv)mv.hidden=true;document.body.style.background="";}
   function showHome(){hideAllViews();$("#homeView").hidden=false;renderMenu();window.scrollTo({top:0,behavior:"smooth"});}
   function showKomatte(){hideAllViews();$("#komatteView").hidden=false;resetCreateForm();setReportForm(false);renderList();window.scrollTo({top:0,behavior:"smooth"});}
+  function updateSheetsStatus(){var el2=$("#sheetsStatus");if(!el2)return;if(remoteOn()){el2.textContent="● 接続中：Google スプレッドシートに保存しています";el2.className="sheets-status on";}else{el2.textContent="○ 未接続：この端末内に保存しています";el2.className="sheets-status off";}}
   function showSettings(){
     hideAllViews();$("#settingsView").hidden=false;
     editingDeptId=null;editingEmpId=null;editingMenuKey=null;
     fillDeptSelectEmpty($("#newEmpDept"),"");
+    $("#sheetsUrl").value=SHEETS.url||"";$("#sheetsToken").value=SHEETS.token||"";updateSheetsStatus();
     renderMenuSettings();renderDeptSettings();renderEmpSettings();
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
   /* ---- events ---- */
+  /* ---- import / export (Excel) ---- */
+  var IO_HEADER=["報告日","提案者","部署","お客様の困っている情報","情報の詳細","解決策","実施担当者","完了時期","備考","カテゴリ","対応状況"];
+  function pad2(n){return ("0"+n).slice(-2);}
+  function normDate(v){
+    if(v instanceof Date && !isNaN(v))return v.getFullYear()+"-"+pad2(v.getMonth()+1)+"-"+pad2(v.getDate());
+    var s=String(v==null?"":v).trim();if(!s)return "";
+    s=s.replace(/[\/年]/g,"-").replace(/日/g,"");var p=s.split("-").filter(Boolean);
+    if(p.length>=3)return p[0]+"-"+pad2(p[1])+"-"+pad2(p[2]);return s;
+  }
+  function normMonth(v){
+    if(v instanceof Date && !isNaN(v))return v.getFullYear()+"-"+pad2(v.getMonth()+1);
+    var s=String(v==null?"":v).trim();if(!s)return "";
+    s=s.replace(/[\/年]/g,"-").replace(/月/g,"");var p=s.split("-").filter(Boolean);
+    if(p.length>=2)return p[0]+"-"+pad2(p[1]);return s;
+  }
+  function exportXlsx(){
+    if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}
+    var rows=sortReports(state.reports).map(function(r){
+      var p=resolveProposer(r);var cats=Array.isArray(r.category)?r.category:(r.category?[r.category]:[]);
+      return {"報告日":r.reportDate||"","提案者":p.name||"","部署":p.dept||"",
+        "お客様の困っている情報":r.customerIssue||"","情報の詳細":r.detail||"","解決策":r.solution||"",
+        "実施担当者":(r.implementers||[]).join("、"),"完了時期":r.completionDate||"","備考":r.completionNote||"",
+        "カテゴリ":cats.join("、"),"対応状況":r.status||""};
+    });
+    var ws=XLSX.utils.json_to_sheet(rows,{header:IO_HEADER});
+    ws["!cols"]=IO_HEADER.map(function(h){return {wch:(h==="お客様の困っている情報"||h==="情報の詳細"||h==="解決策")?28:14};});
+    var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"困っている");
+    var d=new Date();var fn="考課表_困っている_"+d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate())+".xlsx";
+    XLSX.writeFile(wb,fn);toast("エクスポートしました");
+  }
+  function importXlsx(file){
+    if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array",cellDates:true});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+        var imported=rows.map(function(row){
+          var nm=String(row["提案者"]||"").trim();
+          var emp=state.employees.find(function(x){return x.name===nm;});
+          var cats=String(row["カテゴリ"]||"").split(/[、,\/]/).map(function(s){return s.trim();}).filter(Boolean);
+          var imp=String(row["実施担当者"]||"").split(/[、,\/]/).map(function(s){return s.trim();}).filter(Boolean);
+          var st=String(row["対応状況"]||"").trim();if(["進行中","解決済","解決不可能"].indexOf(st)===-1)st="進行中";
+          return {id:uid(),createdAt:Date.now()+Math.floor(Math.random()*100000),
+            reportDate:normDate(row["報告日"]),
+            proposerId:emp?emp.id:"",proposerName:emp?emp.name:nm,proposerDeptName:emp?deptName(emp.deptId):String(row["部署"]||"").trim(),
+            customerIssue:String(row["お客様の困っている情報"]||"").trim(),detail:String(row["情報の詳細"]||"").trim(),
+            solution:String(row["解決策"]||"").trim(),implementers:imp,
+            completionDate:normMonth(row["完了時期"]),completionNote:String(row["備考"]||"").trim(),
+            category:cats,status:st};
+        }).filter(function(r){return r.customerIssue||r.reportDate;});
+        if(!imported.length){toast("有効なデータが見つかりませんでした");return;}
+        if(!confirm("現在の報告 "+state.reports.length+" 件を、インポートした "+imported.length+" 件で置き換えます。よろしいですか？"))return;
+        state.reports=imported;
+        persistReports().then(function(){state.filter="all";state.catFilter=[];state.prevOnly=false;renderList();toast("インポートしました（"+imported.length+"件）");});
+      }catch(err){console.error(err);toast("インポートに失敗しました。テンプレート形式をご確認ください");}
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  function closeIoMenu(){var m=$("#ioMenu");if(m)m.hidden=true;}
   function bind(){
     $("#reportForm").addEventListener("submit",onCreate);
     $("#newReportToggle").addEventListener("click",function(){setReportForm($("#newReportPanel").hidden);});
 
     $("#summary").addEventListener("click",function(ev){var b=ev.target.closest(".stat");if(!b)return;
       state.filter=b.dataset.f;renderList();});
-    $("#sortSelect").addEventListener("change",function(ev){state.sort=ev.target.value;renderList();});
     $("#searchInput").addEventListener("input",function(ev){state.search=ev.target.value.trim();renderList();});
+    $("#prevMonthChk").addEventListener("change",function(ev){state.prevOnly=ev.target.checked;ev.target.parentNode.classList.toggle("on",ev.target.checked);renderList();});
+    $("#sheetsTest").addEventListener("click",async function(){var u=$("#sheetsUrl").value.trim(),t=$("#sheetsToken").value.trim();if(!u||!t){toast("URLと合言葉を入力してください");return;}try{var res=await fetch(u+"?action=ping&token="+encodeURIComponent(t));var d=await res.json();toast(d&&d.ok?"接続できました":"接続できませんでした（合言葉をご確認ください）");}catch(e){toast("接続できませんでした（URLをご確認ください）");}});
+    $("#sheetsSave").addEventListener("click",function(){SHEETS.url=$("#sheetsUrl").value.trim();SHEETS.token=$("#sheetsToken").value.trim();saveSheetsCfg();updateSheetsStatus();toast("保存しました。読み込み直します");setTimeout(function(){location.reload();},700);});
+    $("#sheetsClear").addEventListener("click",function(){if(!confirm("連携を解除して、この端末内保存に戻しますか？"))return;SHEETS.url="";SHEETS.token="";saveSheetsCfg();$("#sheetsUrl").value="";$("#sheetsToken").value="";updateSheetsStatus();toast("解除しました。読み込み直します");setTimeout(function(){location.reload();},700);});
+    $("#ioGear").addEventListener("click",function(ev){ev.stopPropagation();var m=$("#ioMenu");m.hidden=!m.hidden;});
+    $("#ioExport").addEventListener("click",function(){closeIoMenu();exportXlsx();});
+    $("#ioImport").addEventListener("click",function(){closeIoMenu();$("#ioFile").click();});
+    $("#ioFile").addEventListener("change",function(ev){var f=ev.target.files&&ev.target.files[0];if(f)importXlsx(f);ev.target.value="";});
+    document.addEventListener("click",function(ev){var w=ev.target.closest&&ev.target.closest(".io-menu-wrap");if(!w)closeIoMenu();});
     $("#catFilter").addEventListener("change",function(ev){var cb=ev.target;if(!cb||cb.type!=="checkbox")return;
       cb.parentNode.classList.toggle("on",cb.checked);
       state.catFilter=Array.prototype.slice.call(this.querySelectorAll("input:checked")).map(function(x){return x.value;});renderList();});
@@ -980,10 +1317,16 @@
 
   async function init(){
     bind();
+    loadSheetsCfg();
     // report menu (apply saved name/desc onto defaults)
     state.menu=DEFAULT_MENU.map(function(m){return Object.assign({},m);});
     var mn=await sget(MENU_KEY);
     if(mn&&mn.value){try{(JSON.parse(mn.value)||[]).forEach(function(o){var t=state.menu.find(function(m){return m.key===o.key;});if(t){if(o.name)t.name=o.name;if(o.desc!=null)t.desc=o.desc;}});}catch(e){}}
+    if(remoteOn()){
+      try{var _d=await sheetLoad(DEPT_SHEET);state.departments=_d.map(function(x){return {id:uid(),name:String(x["部署名"]||"").trim()};}).filter(function(d){return d.name;});}catch(e){state.departments=[];toast("接続に失敗しました。URL・合言葉をご確認ください");}
+      try{var _e=await sheetLoad(EMP_SHEET);state.employees=_e.map(function(x){var dn=String(x["部署"]||"").trim();var dp=state.departments.find(function(d){return d.name===dn;});return {id:uid(),name:String(x["名前"]||"").trim(),deptId:dp?dp.id:""};}).filter(function(e){return e.name;});}catch(e){state.employees=[];}
+      try{var _r=await sheetLoad(KOMATTE_SHEET);state.reports=_r.map(komatteFromRow);}catch(e){state.reports=[];}
+    } else {
     // departments (migrate string[] -> object[])
     var d=await sget(DEPT_KEY);
     if(d&&d.value){try{var arr=JSON.parse(d.value)||[];
@@ -1004,16 +1347,16 @@
     // reports (normalize old proposer string)
     var r=await sget(DATA_KEY);
     if(r&&r.value){try{state.reports=JSON.parse(r.value)||[];}catch(e){state.reports=[];}
-      state.reports.forEach(function(x){if(!x.proposerName&&x.proposer)x.proposerName=x.proposer;if(x.status==="保留中")x.status="保留";if(typeof x.category==="string")x.category=x.category?[x.category]:[];if(x.category==null)x.category=[];});}
+      state.reports.forEach(function(x){if(!x.proposerName&&x.proposer)x.proposerName=x.proposer;if(x.status==="保留中"||x.status==="保留")x.status="進行中";if(typeof x.category==="string")x.category=x.category?[x.category]:[];if(x.category==null)x.category=[];});}
     if(state.reports.length===0){
       var findEmp=function(n){return state.employees.find(function(x){return x.name===n;});};
       var t=Date.now();
       var raw=[
-        {p:"山田花子",reportDate:"2026-04-10",customerIssue:"納品書のレイアウトが分かりにくい",detail:"取引先より、納品書の品目と金額の対応が読み取りづらいとの指摘。複数件、同様の声が寄せられている。",solution:"帳票テンプレートを見直し、品目ごとに区切り線と小計欄を追加する方向で検討中。",implementers:["田中一郎"],completionDate:"2026-05",completionNote:"印刷業者の確認待ちで遅延中",category:["GCC案件"],status:"保留"},
+        {p:"山田花子",reportDate:"2026-04-10",customerIssue:"納品書のレイアウトが分かりにくい",detail:"取引先より、納品書の品目と金額の対応が読み取りづらいとの指摘。複数件、同様の声が寄せられている。",solution:"帳票テンプレートを見直し、品目ごとに区切り線と小計欄を追加する方向で検討中。",implementers:["田中一郎"],completionDate:"2026-05",completionNote:"印刷業者の確認待ちで遅延中",category:["GCC案件"],status:"進行中"},
         {p:"田中一郎",reportDate:"2026-05-08",customerIssue:"問い合わせ電話がつながりにくい時間帯がある",detail:"月初の午前中に入電が集中し、待ち時間が長いとのご意見。",solution:"月初午前の応対シフトを1名増員し、折り返し予約の仕組みをご案内する運用に変更。",implementers:["山田花子","太田隆"],completionDate:"2026-05",completionNote:"",category:["SEI案件"],status:"解決済"},
-        {p:"太田隆",reportDate:"2026-06-02",customerIssue:"管理画面のログインが時々失敗する",detail:"特定ブラウザでセッションが切れやすいとの報告。再現条件を調査中。",solution:"セッション保持の設定を見直し、次回アップデートで改修予定。",implementers:["太田隆"],completionDate:"2026-08",completionNote:"次回リリースに合わせて対応",category:["開発案件"],status:"保留"},
+        {p:"太田隆",reportDate:"2026-06-02",customerIssue:"管理画面のログインが時々失敗する",detail:"特定ブラウザでセッションが切れやすいとの報告。再現条件を調査中。",solution:"セッション保持の設定を見直し、次回アップデートで改修予定。",implementers:["太田隆"],completionDate:"2026-08",completionNote:"次回リリースに合わせて対応",category:["開発案件"],status:"進行中"},
         {p:"山田花子",reportDate:"2026-03-20",customerIssue:"製造終了した旧モデルの交換部品がほしい",detail:"旧モデルの交換部品について、継続供給の要望をいただいた。",solution:"部品の在庫終了かつ再生産が困難なため、後継製品への移行をご案内。",implementers:["山田花子"],completionDate:"",completionNote:"代替品をご提案済み",category:["その他"],status:"解決不可能"},
-        {p:"田中一郎",reportDate:"2026-06-15",customerIssue:"請求書をPDFでも受け取りたい",detail:"郵送に加えて、メールでのPDF送付を希望される取引先が増えている。",solution:"",implementers:[],completionDate:"",completionNote:"",category:["GCC案件","開発案件"],status:"保留"}
+        {p:"田中一郎",reportDate:"2026-06-15",customerIssue:"請求書をPDFでも受け取りたい",detail:"郵送に加えて、メールでのPDF送付を希望される取引先が増えている。",solution:"",implementers:[],completionDate:"",completionNote:"",category:["GCC案件","開発案件"],status:"進行中"}
       ];
       state.reports=raw.map(function(o,i){var e=findEmp(o.p);
         return {id:uid(),createdAt:t+i,reportDate:o.reportDate,
@@ -1021,6 +1364,7 @@
           customerIssue:o.customerIssue,detail:o.detail,solution:o.solution,implementers:o.implementers,
           completionDate:o.completionDate,completionNote:o.completionNote,category:o.category,status:o.status};});
       await persistReports();
+    }
     }
     resetCreateForm();showHome();
     if(!hasStore&&!hasLS)toast("このブラウザではデータが保存されません");
