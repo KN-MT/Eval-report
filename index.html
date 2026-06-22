@@ -160,6 +160,7 @@
   .mod-check input{width:16px;height:16px;accent-color:var(--primary)}
   .mod-people{display:flex;flex-wrap:wrap;gap:8px}
   .mod-people-empty{color:var(--ink-faint);font-size:13px}
+  .btn:disabled,.btn[disabled]{opacity:.5;cursor:not-allowed}
   .sheets-status{font-size:13.5px;font-weight:700;margin:0 0 14px}
   .sheets-status.on{color:var(--primary)}
   .sheets-status.off{color:var(--ink-soft)}
@@ -1212,7 +1213,7 @@
   function hideAllViews(){$("#homeView").hidden=true;$("#komatteView").hidden=true;$("#settingsView").hidden=true;var mv=$("#moduleView");if(mv)mv.hidden=true;document.body.style.background="";}
   function showHome(){hideAllViews();$("#homeView").hidden=false;renderMenu();window.scrollTo({top:0,behavior:"smooth"});}
   function showKomatte(){hideAllViews();$("#komatteView").hidden=false;resetCreateForm();setReportForm(false);renderList();window.scrollTo({top:0,behavior:"smooth"});}
-  function updateSheetsStatus(){var el2=$("#sheetsStatus");if(!el2)return;if(remoteOn()){el2.textContent="● 接続中：Google スプレッドシートに保存しています";el2.className="sheets-status on";}else{el2.textContent="○ 未接続：この端末内に保存しています";el2.className="sheets-status off";}}
+  function updateSheetsStatus(){var el2=$("#sheetsStatus");if(!el2)return;if(remoteOn()){el2.textContent="● 接続中：Google スプレッドシートに保存しています";el2.className="sheets-status on";}else{el2.textContent="○ 未接続：この端末内に保存しています";el2.className="sheets-status off";}var tb=$("#sheetsTest");if(tb)tb.disabled=remoteOn();}
   function showSettings(){
     hideAllViews();$("#settingsView").hidden=false;
     editingDeptId=null;editingEmpId=null;editingMenuKey=null;
@@ -1292,9 +1293,12 @@
       state.filter=b.dataset.f;renderList();});
     $("#searchInput").addEventListener("input",function(ev){state.search=ev.target.value.trim();renderList();});
     $("#prevMonthChk").addEventListener("change",function(ev){state.prevOnly=ev.target.checked;ev.target.parentNode.classList.toggle("on",ev.target.checked);renderList();});
-    $("#sheetsTest").addEventListener("click",async function(){var u=$("#sheetsUrl").value.trim(),t=$("#sheetsToken").value.trim();if(!u||!t){toast("URLと合言葉を入力してください");return;}try{var d=await jsonp(u+"?action=ping&token="+encodeURIComponent(t));toast(d&&d.ok?"接続できました":"接続できませんでした（合言葉をご確認ください）");}catch(e){toast("接続できませんでした（このプレビュー内ではテストできません。公開サイトかブラウザでお試しください）");}});
+    $("#sheetsTest").addEventListener("click",async function(){var u=$("#sheetsUrl").value.trim(),t=$("#sheetsToken").value.trim();if(!u||!t){toast("URLと合言葉を入力してください");return;}try{var d=await jsonp(u+"?action=ping&token="+encodeURIComponent(t));if(d&&d.ok){toast("接続できました");var tb=$("#sheetsTest");if(tb)tb.disabled=true;}else{toast("接続できませんでした（合言葉をご確認ください）");}}catch(e){toast("接続できませんでした（このプレビュー内ではテストできません。公開サイトかブラウザでお試しください）");}});
     $("#sheetsSave").addEventListener("click",function(){SHEETS.url=$("#sheetsUrl").value.trim();SHEETS.token=$("#sheetsToken").value.trim();saveSheetsCfg();updateSheetsStatus();toast("保存しました。読み込み直します");setTimeout(function(){location.reload();},700);});
     $("#sheetsClear").addEventListener("click",function(){if(!confirm("連携を解除して、この端末内保存に戻しますか？"))return;SHEETS.url="";SHEETS.token="";saveSheetsCfg();$("#sheetsUrl").value="";$("#sheetsToken").value="";updateSheetsStatus();toast("解除しました。読み込み直します");setTimeout(function(){location.reload();},700);});
+    function reenableTest(){var tb=$("#sheetsTest");if(tb)tb.disabled=false;}
+    $("#sheetsUrl").addEventListener("input",reenableTest);
+    $("#sheetsToken").addEventListener("input",reenableTest);
     $("#ioGear").addEventListener("click",function(ev){ev.stopPropagation();var m=$("#ioMenu");m.hidden=!m.hidden;});
     $("#ioExport").addEventListener("click",function(){closeIoMenu();exportXlsx();});
     $("#ioImport").addEventListener("click",function(){closeIoMenu();$("#ioFile").click();});
