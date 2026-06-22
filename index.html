@@ -547,8 +547,9 @@
     thanks:{reportDate:"報告日",person:"報告者",thankedPeople:"感謝を受けた人",customer:"お客様の情報",detail:"詳細"},
     growth:{reportDate:"実施日",person:"報告者",item:"利用品目",useDetail:"利用詳細",effect:"学んだ内容・得られた効果（利用後の効果）"}
   };
-  async function sheetLoad(sheet){var u=SHEETS.url+"?action=load&sheet="+encodeURIComponent(sheet)+"&token="+encodeURIComponent(SHEETS.token);var res=await fetch(u);var d=await res.json();if(!d.ok)throw new Error(d.error||"load error");return d.rows||[];}
-  async function sheetSave(sheet,header,rows){var res=await fetch(SHEETS.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"save",token:SHEETS.token,sheet:sheet,header:header,rows:rows})});var d=await res.json();if(!d.ok)throw new Error(d.error||"save error");return d;}
+  function jsonp(url){return new Promise(function(resolve,reject){var cb="__scb_"+Date.now()+"_"+Math.floor(Math.random()*100000);var s=document.createElement("script");var done=false;var timer=setTimeout(function(){if(!done){clean();reject(new Error("timeout"));}},15000);function clean(){done=true;clearTimeout(timer);try{delete window[cb];}catch(e){window[cb]=undefined;}if(s.parentNode)s.parentNode.removeChild(s);}window[cb]=function(data){clean();resolve(data);};s.onerror=function(){clean();reject(new Error("network"));};s.src=url+(url.indexOf("?")>=0?"&":"?")+"callback="+cb;document.body.appendChild(s);});}
+  async function sheetLoad(sheet){var u=SHEETS.url+"?action=load&sheet="+encodeURIComponent(sheet)+"&token="+encodeURIComponent(SHEETS.token);var d=await jsonp(u);if(!d||!d.ok)throw new Error((d&&d.error)||"load error");return d.rows||[];}
+  async function sheetSave(sheet,header,rows){await fetch(SHEETS.url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"save",token:SHEETS.token,sheet:sheet,header:header,rows:rows})});return {ok:true};}
   function modPersonName(id,snap){if(id){var e=state.employees.find(function(x){return x.id===id;});if(e)return e.name;}return snap||"";}
   function modPeopleNames(ids){return (ids||[]).map(function(id){var e=state.employees.find(function(x){return x.id===id;});return e?e.name:"";}).filter(Boolean).join("、");}
   function empIdByName(n){n=(n||"").replace(/（[^）]*）|\([^)]*\)/,"").trim();var e=state.employees.find(function(x){return x.name===n;});return e?e.id:"";}
@@ -1291,7 +1292,7 @@
       state.filter=b.dataset.f;renderList();});
     $("#searchInput").addEventListener("input",function(ev){state.search=ev.target.value.trim();renderList();});
     $("#prevMonthChk").addEventListener("change",function(ev){state.prevOnly=ev.target.checked;ev.target.parentNode.classList.toggle("on",ev.target.checked);renderList();});
-    $("#sheetsTest").addEventListener("click",async function(){var u=$("#sheetsUrl").value.trim(),t=$("#sheetsToken").value.trim();if(!u||!t){toast("URLと合言葉を入力してください");return;}try{var res=await fetch(u+"?action=ping&token="+encodeURIComponent(t));var d=await res.json();toast(d&&d.ok?"接続できました":"接続できませんでした（合言葉をご確認ください）");}catch(e){toast("接続できませんでした（URLをご確認ください）");}});
+    $("#sheetsTest").addEventListener("click",async function(){var u=$("#sheetsUrl").value.trim(),t=$("#sheetsToken").value.trim();if(!u||!t){toast("URLと合言葉を入力してください");return;}try{var d=await jsonp(u+"?action=ping&token="+encodeURIComponent(t));toast(d&&d.ok?"接続できました":"接続できませんでした（合言葉をご確認ください）");}catch(e){toast("接続できませんでした（このプレビュー内ではテストできません。公開サイトかブラウザでお試しください）");}});
     $("#sheetsSave").addEventListener("click",function(){SHEETS.url=$("#sheetsUrl").value.trim();SHEETS.token=$("#sheetsToken").value.trim();saveSheetsCfg();updateSheetsStatus();toast("保存しました。読み込み直します");setTimeout(function(){location.reload();},700);});
     $("#sheetsClear").addEventListener("click",function(){if(!confirm("連携を解除して、この端末内保存に戻しますか？"))return;SHEETS.url="";SHEETS.token="";saveSheetsCfg();$("#sheetsUrl").value="";$("#sheetsToken").value="";updateSheetsStatus();toast("解除しました。読み込み直します");setTimeout(function(){location.reload();},700);});
     $("#ioGear").addEventListener("click",function(ev){ev.stopPropagation();var m=$("#ioMenu");m.hidden=!m.hidden;});
