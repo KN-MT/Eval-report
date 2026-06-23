@@ -397,19 +397,11 @@
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
   .set-cats{display:flex;flex-direction:column;gap:10px}
-  .set-cats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:460px}
-  .set-cat{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 12px;cursor:pointer;font-family:inherit;transition:all .15s;box-shadow:0 1px 2px rgba(27,42,61,.04)}
-  .set-cat:hover{border-color:var(--primary);box-shadow:0 8px 20px rgba(27,42,61,.12);transform:translateY(-2px)}
-  .set-cat-ico{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;flex:none;background:var(--primary-tint);color:var(--primary-dark)}
-  .set-cat[data-cat="home"] .set-cat-ico{background:#E7F0FB;color:#1F5FB0}
-  .set-cat[data-cat="dept"] .set-cat-ico{background:#E8F6EE;color:#1F8A55}
-  .set-cat[data-cat="emp"] .set-cat-ico{background:#F1ECFB;color:#7A4FD0}
-  .set-cat[data-cat="data"] .set-cat-ico{background:#FBEFE0;color:#B26A1B}
-  .set-cat-tx{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
-  .set-cat-tx b{font-size:13.5px;font-weight:700;color:var(--ink)}
-  .set-cat-tx i{font-style:normal;font-size:11px;color:var(--ink-soft);line-height:1.4}
-  .set-cat-go{display:none}
-  .set-page .set-back{margin-bottom:14px}
+  .set-tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px;flex-wrap:wrap}
+  .set-tab{border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;padding:10px 16px;border-radius:9px 9px 0 0;position:relative;transition:color .15s;white-space:nowrap}
+  .set-tab:hover{color:var(--ink)}
+  .set-tab.on{color:var(--primary)}
+  .set-tab.on::after{content:"";position:absolute;left:8px;right:8px;bottom:-2px;height:2px;background:var(--primary);border-radius:2px}
   .soon-note{background:var(--primary-tint);color:var(--primary-dark);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.6;margin-bottom:14px}
   .data-prev{display:flex;flex-direction:column;gap:8px}
   .data-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
@@ -520,15 +512,14 @@
       </div>
     </header>
 
-    <div class="set-cats" id="setMenu">
-      <button class="set-cat" type="button" data-cat="home"><span class="set-cat-ico">🏠</span><span class="set-cat-tx"><b>ホームの編集</b><i>各項目の名称・説明</i></span><span class="set-cat-go">›</span></button>
-      <button class="set-cat" type="button" data-cat="dept"><span class="set-cat-ico">🏢</span><span class="set-cat-tx"><b>部署の管理</b><i>部署の追加・並び替え</i></span><span class="set-cat-go">›</span></button>
-      <button class="set-cat" type="button" data-cat="emp"><span class="set-cat-ico">👥</span><span class="set-cat-tx"><b>社員の管理</b><i>社員の追加・並び替え</i></span><span class="set-cat-go">›</span></button>
-      <button class="set-cat" type="button" data-cat="data"><span class="set-cat-ico">📊</span><span class="set-cat-tx"><b>データ管理</b><i>各項目のデータをExcelで入出力（今後追加）</i></span><span class="set-cat-go">›</span></button>
+    <div class="set-tabs" id="setTabs">
+      <button class="set-tab on" type="button" data-cat="home">ホームの編集</button>
+      <button class="set-tab" type="button" data-cat="dept">部署</button>
+      <button class="set-tab" type="button" data-cat="emp">社員</button>
+      <button class="set-tab" type="button" data-cat="data">データ管理</button>
     </div>
 
     <section class="panel set-page" id="setHome" hidden>
-      <button class="ghost-pill set-back" type="button">← 設定メニューに戻る</button>
       <div class="panel-head"><span class="mark"></span><h2>ホームの編集</h2><span class="note">各項目の名称・説明</span></div>
       <div class="panel-body">
         <div class="set-list" id="menuEditList"></div>
@@ -536,7 +527,6 @@
     </section>
 
     <section class="panel set-page" id="setDept" hidden>
-      <button class="ghost-pill set-back" type="button">← 設定メニューに戻る</button>
       <div class="panel-head"><span class="mark"></span><h2>部署の管理</h2><span class="note">ドラッグで並び替え</span></div>
       <div class="panel-body">
         <div class="set-list" id="deptList"></div>
@@ -548,7 +538,6 @@
     </section>
 
     <section class="panel set-page" id="setEmp" hidden>
-      <button class="ghost-pill set-back" type="button">← 設定メニューに戻る</button>
       <div class="panel-head"><span class="mark"></span><h2>社員の管理</h2><span class="note">ドラッグで並び替え</span></div>
       <div class="panel-body">
         <div class="set-list" id="empList"></div>
@@ -561,7 +550,6 @@
     </section>
 
     <section class="panel set-page" id="setData" hidden>
-      <button class="ghost-pill set-back" type="button">← 設定メニューに戻る</button>
       <div class="panel-head"><span class="mark"></span><h2>データ管理</h2><span class="note">Excel 入出力（今後追加）</span></div>
       <div class="panel-body">
         <div class="soon-note">各項目のデータを Excel ファイルでインポート・エクスポートできる機能を今後追加する予定です。（現在は表示のみ）</div>
@@ -1353,11 +1341,13 @@
     editingDeptId=null;editingEmpId=null;editingMenuKey=null;
     fillDeptSelectEmpty($("#newEmpDept"),"");
     renderMenuSettings();renderDeptSettings();renderEmpSettings();
-    showSetMenu();
+    switchSetTab("home");
     window.scrollTo({top:0,behavior:"smooth"});
   }
-  function showSetMenu(){var m=$("#setMenu");if(m)m.hidden=false;["setHome","setDept","setEmp","setData"].forEach(function(id){var p=document.getElementById(id);if(p)p.hidden=true;});}
-  function openSetCat(cat){var m=$("#setMenu");if(m)m.hidden=true;$("#setHome").hidden=(cat!=="home");$("#setDept").hidden=(cat!=="dept");$("#setEmp").hidden=(cat!=="emp");$("#setData").hidden=(cat!=="data");window.scrollTo({top:0,behavior:"smooth"});}
+  function switchSetTab(cat){
+    $("#setHome").hidden=(cat!=="home");$("#setDept").hidden=(cat!=="dept");$("#setEmp").hidden=(cat!=="emp");$("#setData").hidden=(cat!=="data");
+    Array.prototype.forEach.call(document.querySelectorAll("#setTabs .set-tab"),function(b){b.classList.toggle("on",b.dataset.cat===cat);});
+  }
 
   /* ---- events ---- */
   /* ---- import / export (Excel) ---- */
@@ -1430,8 +1420,7 @@
       state.filter=b.dataset.f;renderList();});
     $("#searchInput").addEventListener("input",function(ev){state.search=ev.target.value.trim();renderList();});
     $("#prevMonthChk").addEventListener("change",function(ev){state.prevOnly=ev.target.checked;ev.target.parentNode.classList.toggle("on",ev.target.checked);renderList();});
-    $("#setMenu").addEventListener("click",function(ev){var b=ev.target.closest(".set-cat");if(!b)return;openSetCat(b.dataset.cat);});
-    Array.prototype.forEach.call(document.querySelectorAll("#settingsView .set-back"),function(b){b.addEventListener("click",showSetMenu);});
+    $("#setTabs").addEventListener("click",function(ev){var b=ev.target.closest(".set-tab");if(!b)return;switchSetTab(b.dataset.cat);});
     $("#ioGear").addEventListener("click",function(ev){ev.stopPropagation();var m=$("#ioMenu");m.hidden=!m.hidden;});
     $("#ioExport").addEventListener("click",function(){closeIoMenu();exportXlsx();});
     $("#ioImport").addEventListener("click",function(){closeIoMenu();$("#ioFile").click();});
