@@ -396,6 +396,15 @@
     .sort select{flex:1;min-width:0}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .set-cats{display:flex;flex-direction:column;gap:10px}
+  .set-cat{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;font-family:inherit;transition:all .15s;box-shadow:0 1px 2px rgba(27,42,61,.04)}
+  .set-cat:hover{border-color:var(--primary);box-shadow:0 6px 18px rgba(27,42,61,.10);transform:translateY(-1px)}
+  .set-cat-ico{font-size:24px;line-height:1;flex:none}
+  .set-cat-tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+  .set-cat-tx b{font-size:15.5px;font-weight:700;color:var(--ink)}
+  .set-cat-tx i{font-style:normal;font-size:12.5px;color:var(--ink-soft)}
+  .set-cat-go{font-size:22px;color:var(--ink-faint);flex:none}
+  .set-page .set-back{margin-bottom:14px}
 </style>
 
 <div class="wrap">
@@ -496,37 +505,26 @@
       <div class="title-group">
         <span class="eyebrow">設定</span>
         <h1>設定</h1>
-        <span class="subtitle">考課表報告の記載内容の編集と、全報告で共通の社員・部署の管理を行います</span>
+        <span class="subtitle">ホームの編集と、全報告で共通の部署・社員の管理を行います</span>
       </div>
     </header>
 
-    <section class="panel">
-      <div class="panel-head"><span class="mark"></span><h2>データの保存先</h2><span class="note">Supabase（クラウド共有）</span></div>
-      <div class="panel-body">
-        <p class="sheets-status" id="sheetsStatus"></p>
-        <div class="grid">
-          <div class="field full"><label for="sheetsUrl">Supabase の Project URL</label><input type="text" id="sheetsUrl" placeholder="https://xxxx.supabase.co"></div>
-          <div class="field full"><label for="sheetsToken">公開キー（Publishable / anon）</label><input type="text" id="sheetsToken" placeholder="sb_publishable_... または eyJ..."></div>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-ghost btn-sm" id="sheetsTest">接続テスト</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="sheetsClear">連携を解除</button>
-          <button type="button" class="btn btn-primary btn-sm" id="sheetsSave">保存して接続</button>
-        </div>
-        <p class="sheets-hint">空欄のまま保存するとこの端末内に保存します。入力して保存するとSupabaseに保存・共有されます。公開キー（Publishable/anon）はブラウザ用の公開キーです。秘密キー(secret/service_role)は入れないでください。</p>
-      </div>
-    </section>
+    <div class="set-cats" id="setMenu">
+      <button class="set-cat" type="button" data-cat="home"><span class="set-cat-ico">🏠</span><span class="set-cat-tx"><b>ホームの編集</b><i>各項目の名称・説明</i></span><span class="set-cat-go">›</span></button>
+      <button class="set-cat" type="button" data-cat="dept"><span class="set-cat-ico">🏢</span><span class="set-cat-tx"><b>部署の管理</b><i>部署の追加・並び替え</i></span><span class="set-cat-go">›</span></button>
+      <button class="set-cat" type="button" data-cat="emp"><span class="set-cat-ico">👥</span><span class="set-cat-tx"><b>社員の管理</b><i>社員の追加・並び替え</i></span><span class="set-cat-go">›</span></button>
+    </div>
 
-    <section class="panel">
-      <div class="panel-head"><span class="mark"></span><h2>考課表報告の編集</h2><span class="note">各項目の名称・説明</span></div>
+    <section class="panel set-page" id="setHome" hidden>
+      <button class="ghost-pill set-back" type="button">← 設定メニューに戻る</button>
+      <div class="panel-head"><span class="mark"></span><h2>ホームの編集</h2><span class="note">各項目の名称・説明</span></div>
       <div class="panel-body">
         <div class="set-list" id="menuEditList"></div>
       </div>
     </section>
 
-    <div class="shared-note"><span>ⓘ</span><span>以下で登録した社員・部署は、すべての報告で共通して使われます。</span></div>
-
-    <section class="panel">
+    <section class="panel set-page" id="setDept" hidden>
+      <button class="ghost-pill set-back" type="button">← 設定メニューに戻る</button>
       <div class="panel-head"><span class="mark"></span><h2>部署の管理</h2><span class="note">ドラッグで並び替え</span></div>
       <div class="panel-body">
         <div class="set-list" id="deptList"></div>
@@ -537,7 +535,8 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel set-page" id="setEmp" hidden>
+      <button class="ghost-pill set-back" type="button">← 設定メニューに戻る</button>
       <div class="panel-head"><span class="mark"></span><h2>社員の管理</h2><span class="note">ドラッグで並び替え</span></div>
       <div class="panel-body">
         <div class="set-list" id="empList"></div>
@@ -1320,15 +1319,16 @@
   function hideAllViews(){$("#homeView").hidden=true;$("#komatteView").hidden=true;$("#settingsView").hidden=true;var mv=$("#moduleView");if(mv)mv.hidden=true;document.body.style.background="";}
   function showHome(){hideAllViews();$("#homeView").hidden=false;renderMenu();window.scrollTo({top:0,behavior:"smooth"});}
   function showKomatte(){hideAllViews();$("#komatteView").hidden=false;resetCreateForm();setReportForm(false);renderList();window.scrollTo({top:0,behavior:"smooth"});}
-  function updateSheetsStatus(){var el2=$("#sheetsStatus");if(!el2)return;if(remoteOn()){el2.textContent="● 接続中：Google スプレッドシートに保存しています";el2.className="sheets-status on";}else{el2.textContent="○ 未接続：この端末内に保存しています";el2.className="sheets-status off";}var tb=$("#sheetsTest");if(tb)tb.disabled=remoteOn();}
   function showSettings(){
     hideAllViews();$("#settingsView").hidden=false;
     editingDeptId=null;editingEmpId=null;editingMenuKey=null;
     fillDeptSelectEmpty($("#newEmpDept"),"");
-    $("#sheetsUrl").value=SHEETS.url||"";$("#sheetsToken").value=SHEETS.token||"";updateSheetsStatus();
     renderMenuSettings();renderDeptSettings();renderEmpSettings();
+    showSetMenu();
     window.scrollTo({top:0,behavior:"smooth"});
   }
+  function showSetMenu(){var m=$("#setMenu");if(m)m.hidden=false;["setHome","setDept","setEmp"].forEach(function(id){var p=document.getElementById(id);if(p)p.hidden=true;});}
+  function openSetCat(cat){var m=$("#setMenu");if(m)m.hidden=true;$("#setHome").hidden=(cat!=="home");$("#setDept").hidden=(cat!=="dept");$("#setEmp").hidden=(cat!=="emp");window.scrollTo({top:0,behavior:"smooth"});}
 
   /* ---- events ---- */
   /* ---- import / export (Excel) ---- */
@@ -1401,12 +1401,8 @@
       state.filter=b.dataset.f;renderList();});
     $("#searchInput").addEventListener("input",function(ev){state.search=ev.target.value.trim();renderList();});
     $("#prevMonthChk").addEventListener("change",function(ev){state.prevOnly=ev.target.checked;ev.target.parentNode.classList.toggle("on",ev.target.checked);renderList();});
-    $("#sheetsTest").addEventListener("click",async function(){var u=$("#sheetsUrl").value.trim(),t=$("#sheetsToken").value.trim();if(!u||!t){toast("URLと合言葉を入力してください");return;}try{var ok=await supaPing(u,t);if(ok){toast("接続できました");var tb=$("#sheetsTest");if(tb)tb.disabled=true;}else{toast("接続できませんでした（URL・公開キーをご確認ください）");}}catch(e){toast("接続できませんでした（このプレビュー内ではテストできません。公開サイトかブラウザでお試しください）");}});
-    $("#sheetsSave").addEventListener("click",function(){SHEETS.url=$("#sheetsUrl").value.trim();SHEETS.token=$("#sheetsToken").value.trim();saveSheetsCfg();updateSheetsStatus();toast("保存しました。読み込み直します");setTimeout(function(){location.reload();},700);});
-    $("#sheetsClear").addEventListener("click",function(){if(!confirm("連携を解除して、この端末内保存に戻しますか？"))return;SHEETS.url="";SHEETS.token="";saveSheetsCfg();$("#sheetsUrl").value="";$("#sheetsToken").value="";updateSheetsStatus();toast("解除しました。読み込み直します");setTimeout(function(){location.reload();},700);});
-    function reenableTest(){var tb=$("#sheetsTest");if(tb)tb.disabled=false;}
-    $("#sheetsUrl").addEventListener("input",reenableTest);
-    $("#sheetsToken").addEventListener("input",reenableTest);
+    $("#setMenu").addEventListener("click",function(ev){var b=ev.target.closest(".set-cat");if(!b)return;openSetCat(b.dataset.cat);});
+    Array.prototype.forEach.call(document.querySelectorAll("#settingsView .set-back"),function(b){b.addEventListener("click",showSetMenu);});
     $("#ioGear").addEventListener("click",function(ev){ev.stopPropagation();var m=$("#ioMenu");m.hidden=!m.hidden;});
     $("#ioExport").addEventListener("click",function(){closeIoMenu();exportXlsx();});
     $("#ioImport").addEventListener("click",function(){closeIoMenu();$("#ioFile").click();});
