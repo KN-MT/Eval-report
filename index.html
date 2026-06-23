@@ -330,16 +330,19 @@
   [hidden]{display:none!important}
 
   /* report menu (home) */
-  .menu-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  .menu-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
     background:linear-gradient(135deg,#163E72 0%,#1F5FB0 55%,#2E86C8 100%);
     border-radius:18px;padding:20px 26px;margin-bottom:22px;box-shadow:0 8px 26px rgba(22,62,114,.2);color:#fff}
   .menu-hero .hero-text{display:flex;flex-direction:column;gap:6px}
+  .home-topbar{display:flex;justify-content:flex-end;margin-bottom:10px}
+  .settings-link{border:none;background:none;color:var(--ink-soft);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;padding:4px 6px;transition:color .15s}
+  .settings-link:hover{color:var(--primary)}
+  .settings-ico{font-size:13px;line-height:1}
   .menu-hero .hero-eyebrow{font-size:12px;letter-spacing:.18em;font-weight:700;color:rgba(255,255,255,.72);text-transform:uppercase}
   .menu-hero h1{font-size:30px;font-weight:800;margin:0;color:#fff;letter-spacing:.02em}
   .menu-hero .hero-sub{font-size:13.5px;color:rgba(255,255,255,.85)}
-  .hero-btn{border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.14);color:#fff;border-radius:999px;
-    padding:8px 13px;font-size:25px;line-height:1;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
-  .hero-btn:hover{background:#fff;color:#1F5FB0;border-color:#fff}
+  .hero-btn{border:none;background:none;color:#fff;padding:0;font-size:13px;font-weight:600;line-height:1;cursor:pointer;font-family:inherit;transition:opacity .15s}
+  .hero-btn:hover{opacity:.82}
 
   .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(214px,1fr));gap:12px}
   .menu-card{--accent:#2563EB;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;
@@ -398,11 +401,13 @@
 <div class="wrap">
   <!-- 考課表報告（ホーム） -->
   <div id="homeView">
+    <div class="home-topbar">
+      <button class="settings-link" id="openSettings" title="管理者設定" aria-label="管理者設定"><span class="settings-ico">⚙</span>設定</button>
+    </div>
     <header class="menu-hero">
       <div class="hero-text">
         <h1>考課表報告</h1>
       </div>
-      <button class="hero-btn" id="openSettings" title="管理者設定" aria-label="管理者設定">⚙</button>
     </header>
     <div class="menu-grid" id="menuGrid"></div>
   </div>
