@@ -1232,7 +1232,7 @@
     if(q)arr=arr.filter(function(r){return modHay(cfg,r).indexOf(q)!==-1;});
     if(MOD_UI.prevOnly){var cm=curMonthStr();arr=arr.filter(function(r){var rm=(r.reportDate||"").slice(0,7);return rm&&rm<cm;});}
     arr.sort(function(x,y){return (x.reportDate||"").localeCompare(y.reportDate||"")||(x.createdAt||0)-(y.createdAt||0);});
-    var lh=el("div","list-head");lh.innerHTML='<h2>一覧<span class="count">'+arr.length+'件</span></h2>';wrap.appendChild(lh);
+    var cnt=$("#modCount");if(cnt)cnt.textContent=arr.length+"件";
     if(arr.length===0){var e=el("div","empty");e.textContent=q?"該当する報告がありません":"まだ報告がありません。上のボタンから登録できます。";wrap.appendChild(e);return;}
     var cards=el("div","cards");
     arr.forEach(function(rec){cards.appendChild(MOD_UI.editId===rec.id?modEditCard(cfg,rec):modCardEl(cfg,rec));});
@@ -1258,8 +1258,9 @@
     search.appendChild(sinp);
     var ltLeft=el("div","lt-left");var prevm=el("label","chk prevm"+(MOD_UI.prevOnly?" on":""));var pchk=el("input");pchk.type="checkbox";pchk.checked=!!MOD_UI.prevOnly;var psp=el("span");psp.textContent="前月までを表示";prevm.appendChild(pchk);prevm.appendChild(psp);pchk.addEventListener("change",function(){MOD_UI.prevOnly=pchk.checked;prevm.classList.toggle("on",pchk.checked);renderModList();});ltLeft.appendChild(prevm);
     tools.appendChild(ltLeft);tools.appendChild(search);
+    var lh=el("div","list-head");lh.innerHTML='<h2>報告一覧<span class="count" id="modCount"></span></h2>';
     var listWrap=el("div");listWrap.id="modList";
-    v.appendChild(back);v.appendChild(head);v.appendChild(toggle);v.appendChild(panel);v.appendChild(tools);v.appendChild(listWrap);
+    v.appendChild(back);v.appendChild(head);v.appendChild(toggle);v.appendChild(panel);v.appendChild(lh);v.appendChild(tools);v.appendChild(listWrap);
     renderModList();
   }
   async function showModule(key){var cfg=MOD_CFGS[key];if(!cfg)return;hideAllViews();$("#moduleView").hidden=false;MOD_UI={key:key,search:"",editId:null,prevOnly:false};modThemeApply(cfg);await loadMod(key);renderModule(cfg);window.scrollTo({top:0,behavior:"smooth"});}
