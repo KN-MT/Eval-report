@@ -1045,7 +1045,7 @@
         {k:"reportDate",label:"報告日",type:"date",req:true},
         {k:"kind",label:"項目",type:"select",options:["読書","資格"],req:true},
         {k:"person",label:"名前",type:"person",req:true},
-        {k:"title",label:"書籍名・資格取得内容",type:"text",full:true,req:true},
+        {k:"title",label:"書籍名・資格内容",type:"text",full:true,req:true},
         {k:"detail",label:"詳細（感想や詳細）",type:"textarea",full:true}
       ]},
     thanks:{key:"thanks",title:"感謝の言葉",accent:"#E0568A",dark:"#B83E6E",tint:"#FBE7EF",bg:"#FCF1F5",addLabel:"＋ 感謝の言葉を追加",
@@ -1081,12 +1081,12 @@
   function modDownscale(file,cb){var fr=new FileReader();fr.onload=function(){var img=new Image();img.onload=function(){var max=1200,w=img.width,h=img.height;if(w>max||h>max){if(w>=h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}var c=el("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);try{cb(c.toDataURL("image/jpeg",0.72));}catch(e){cb(fr.result);}};img.onerror=function(){cb(fr.result);};img.src=fr.result;};fr.readAsDataURL(file);}
   function modOpenImg(src){var ov=el("div","img-overlay");ov.onclick=function(){document.body.removeChild(ov);};var im=el("img");im.src=src;ov.appendChild(im);document.body.appendChild(ov);}
   function buildModForm(cfg,rec){
-    var grid=el("div","grid");var getters=[];var imgState={};
+    var grid=el("div","grid");var getters=[];var imgState={};var wrapByKey={},chkByKey={};
     cfg.fields.forEach(function(f){
       var field=el("div","field"+(f.full?" full":""));
       var lab=el("label");lab.innerHTML=esc(f.label)+(f.req?'<span class="req">*</span>':"");
       var inp;
-      if(f.type==="check"){var wc=el("label","mod-check");var cb=el("input");cb.type="checkbox";if(rec&&rec[f.k])cb.checked=true;var sp=el("span");sp.textContent=f.label;wc.appendChild(cb);wc.appendChild(sp);field.appendChild(wc);getters.push({k:f.k,fn:function(){return cb.checked;}});grid.appendChild(field);return;}
+      if(f.type==="check"){var wc=el("label","mod-check");var cb=el("input");cb.type="checkbox";if(rec&&rec[f.k])cb.checked=true;var sp=el("span");sp.textContent=f.label;wc.appendChild(cb);wc.appendChild(sp);field.appendChild(wc);getters.push({k:f.k,fn:function(){return cb.checked;}});wrapByKey[f.k]=field;chkByKey[f.k]=cb;grid.appendChild(field);return;}
       if(f.type==="people"){var box=el("div","mod-people");if(state.employees.length===0){var n=el("div","mod-people-empty");n.textContent="設定で社員を登録してください";box.appendChild(n);}var chosen=(rec&&Array.isArray(rec[f.k]))?rec[f.k].slice():[];state.employees.forEach(function(e){var li=el("label","chk"+(chosen.indexOf(e.id)!==-1?" on":""));var cb=el("input");cb.type="checkbox";cb.value=e.id;cb.checked=chosen.indexOf(e.id)!==-1;cb.addEventListener("change",function(){li.classList.toggle("on",cb.checked);});var sp=el("span");sp.textContent=e.name;li.appendChild(cb);li.appendChild(sp);box.appendChild(li);});field.appendChild(lab);field.appendChild(box);getters.push({k:f.k,fn:function(){return Array.prototype.slice.call(box.querySelectorAll("input:checked")).map(function(x){return x.value;});}});grid.appendChild(field);return;}
       if(f.type==="image"){var ibox=el("div","mod-img");imgState[f.k]=rec?(rec[f.k]||""):"";var prev=el("div","mod-img-prev");function refresh(){prev.innerHTML="";if(imgState[f.k]){var im=el("img");im.src=imgState[f.k];im.onclick=function(){modOpenImg(imgState[f.k]);};prev.appendChild(im);var rm=el("button","mini-btn");rm.type="button";rm.textContent="画像を削除";rm.onclick=function(){imgState[f.k]="";refresh();};prev.appendChild(rm);}}var file=el("input");file.type="file";file.accept="image/*";file.addEventListener("change",function(ev){var fo=ev.target.files&&ev.target.files[0];if(fo)modDownscale(fo,function(d){imgState[f.k]=d;refresh();});ev.target.value="";});field.appendChild(lab);field.appendChild(file);field.appendChild(prev);refresh();getters.push({k:f.k,fn:function(){return imgState[f.k]||"";}});grid.appendChild(field);return;}
       if(f.type==="textarea"){inp=el("textarea");if(f.ph)inp.placeholder=f.ph;if(rec)inp.value=rec[f.k]||"";}
@@ -1095,9 +1095,10 @@
       else if(f.type==="date"){inp=el("input");inp.type="date";if(rec)inp.value=rec[f.k]||"";}
       else if(f.type==="month"){inp=el("input");inp.type="month";if(rec)inp.value=rec[f.k]||"";}
       else{inp=el("input");inp.type="text";if(f.ph)inp.placeholder=f.ph;if(rec)inp.value=rec[f.k]||"";}
-      field.appendChild(lab);field.appendChild(inp);grid.appendChild(field);
+      field.appendChild(lab);field.appendChild(inp);wrapByKey[f.k]=field;grid.appendChild(field);
       getters.push({k:f.k,fn:function(){return typeof inp.value==="string"?inp.value.trim():inp.value;}});
     });
+    (MOD_COND[cfg.key]||[]).forEach(function(c){var cb=chkByKey[c.when],tgt=wrapByKey[c.hide];if(cb&&tgt){var inp=tgt.querySelector("input,textarea,select");var apply=function(){tgt.hidden=cb.checked;if(cb.checked&&inp)inp.value="";};cb.addEventListener("change",apply);apply();}});
     function read(){var o={};getters.forEach(function(g){o[g.k]=g.fn();});return o;}
     function validate(o){for(var i=0;i<cfg.fields.length;i++){var f=cfg.fields[i];if(f.req){var v=o[f.k];if(!v||(Array.isArray(v)&&!v.length)){toast(f.label+"を入力してください");return false;}}}return true;}
     return {wrap:grid,read:read,validate:validate};
@@ -1111,6 +1112,8 @@
     thanks:{},
     growth:{}
   };
+  var KIND_COLORS={"読書":{bg:"#E2F4F3",fg:"#1E807D"},"資格":{bg:"#FBEAD9",fg:"#B36A22"}};
+  var MOD_COND={failure:[{when:"done",hide:"completion"}]};
   function modCardEl(cfg,rec){
     var card=el("div","mcard");card.style.borderLeftColor=cfg.accent;
     var cc=MOD_CARD[cfg.key]||{};var consumed={};
@@ -1122,7 +1125,7 @@
     meta.innerHTML=html;head.appendChild(meta);
     if(cc.badge){var bf=cfg.fields.filter(function(f){return f.k===cc.badge;})[0];if(bf){consumed[bf.k]=1;
       if(bf.type==="check"){if(rec[bf.k]){var bg=el("span","mod-badge");bg.textContent=bf.label.replace(/（.*）/,"");bg.style.background=cfg.tint;bg.style.color=cfg.dark;head.appendChild(bg);}}
-      else{var bv=rec[bf.k];if(bv){var bg2=el("span","mod-badge");bg2.textContent=bv;bg2.style.background=cfg.tint;bg2.style.color=cfg.dark;head.appendChild(bg2);}}}}
+      else{var bv=rec[bf.k];if(bv){var bg2=el("span","mod-badge");bg2.textContent=bv;var kc=(cfg.key==="reading"&&KIND_COLORS[bv])?KIND_COLORS[bv]:{bg:cfg.tint,fg:cfg.dark};bg2.style.background=kc.bg;bg2.style.color=kc.fg;head.appendChild(bg2);}}}}
     card.appendChild(head);
     var body=el("div","mcard-body");var details=cc.details||[];var detailRows=[];
     cfg.fields.forEach(function(f){
@@ -1133,7 +1136,8 @@
       else if(f.type==="check"){if(rec[f.k])disp=f.label.replace(/（.*）/,"");}
       else disp=rec[f.k]||"";
       if(!disp)return;
-      var row=modRow(f.label,disp,f.type==="textarea");
+      var lbl=f.label;if(cfg.key==="reading"&&f.k==="title")lbl=(rec.kind==="読書")?"書籍名":(rec.kind==="資格")?"資格内容":f.label;
+      var row=modRow(lbl,disp,f.type==="textarea");
       if(details.indexOf(f.k)!==-1)detailRows.push(row);else body.appendChild(row);
     });
     card.appendChild(body);
