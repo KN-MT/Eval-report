@@ -149,6 +149,13 @@
   .cards{display:flex;flex-direction:column;gap:14px}
   .mcard{position:relative;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
   .mcard-row{display:flex;gap:10px;padding:4px 0;font-size:14px}
+  .mcard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+  .mcard-meta{display:flex;flex-wrap:wrap;gap:2px 20px;flex:1}
+  .mcard-meta span{font-size:12.5px;color:var(--ink-soft)}
+  .mcard-meta b{font-size:13.5px;font-weight:700;color:var(--ink);margin-left:4px}
+  .detail-toggle{margin-top:6px;border:none;background:none;color:var(--primary);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:4px 0}
+  .detail-toggle:hover{text-decoration:underline}
+  .mcard-details{margin-top:4px;padding-top:8px;border-top:1px dashed var(--line)}
   .mcard-l{flex:0 0 132px;color:var(--ink-soft);font-size:12.5px;font-weight:600;padding-top:1px}
   .mcard-v{flex:1;color:var(--ink);white-space:normal;word-break:break-word}
   .mcard-v.ml{white-space:pre-wrap;line-height:1.6}
@@ -1096,27 +1103,49 @@
     return {wrap:grid,read:read,validate:validate};
   }
   function modRow(label,val,multiline){var row=el("div","mcard-row");var l=el("div","mcard-l");l.textContent=label;var v;if(typeof val==="string"){v=el("div","mcard-v"+(multiline?" ml":""));v.textContent=val;}else{v=el("div","mcard-v");v.appendChild(val);}row.appendChild(l);row.appendChild(v);return row;}
+  var MOD_CARD={
+    kaizen:{badge:"done"},
+    study:{},
+    failure:{badge:"done",details:["caseDetail","cause","solution","implementers"]},
+    reading:{badge:"kind",details:["detail"]},
+    thanks:{},
+    growth:{}
+  };
   function modCardEl(cfg,rec){
     var card=el("div","mcard");card.style.borderLeftColor=cfg.accent;
-    var body=el("div","mcard-body");
+    var cc=MOD_CARD[cfg.key]||{};var consumed={};
+    var dateF=cfg.fields.filter(function(f){return f.type==="date";})[0];
+    var personF=cfg.fields.filter(function(f){return f.type==="person";})[0];
+    var head=el("div","mcard-head");var meta=el("div","mcard-meta");var html="";
+    if(dateF){consumed[dateF.k]=1;html+='<span>'+esc(dateF.label)+' <b>'+esc(fmtDate(rec[dateF.k]))+'</b></span>';}
+    if(personF){consumed[personF.k]=1;html+='<span>'+esc(personF.label)+' <b>'+esc(modPersonLabel(rec[personF.k],rec[personF.k+"_snap"]))+'</b></span>';}
+    meta.innerHTML=html;head.appendChild(meta);
+    if(cc.badge){var bf=cfg.fields.filter(function(f){return f.k===cc.badge;})[0];if(bf){consumed[bf.k]=1;
+      if(bf.type==="check"){if(rec[bf.k]){var bg=el("span","mod-badge");bg.textContent=bf.label.replace(/（.*）/,"");bg.style.background=cfg.tint;bg.style.color=cfg.dark;head.appendChild(bg);}}
+      else{var bv=rec[bf.k];if(bv){var bg2=el("span","mod-badge");bg2.textContent=bv;bg2.style.background=cfg.tint;bg2.style.color=cfg.dark;head.appendChild(bg2);}}}}
+    card.appendChild(head);
+    var body=el("div","mcard-body");var details=cc.details||[];var detailRows=[];
     cfg.fields.forEach(function(f){
-      var val=rec[f.k];
-      if(f.type==="check"){if(val){var b=el("span","mod-badge");b.textContent=f.label.replace(/（.*）/,"");b.style.background=cfg.tint;b.style.color=cfg.dark;body.appendChild(modRow(f.label,b,false));}return;}
-      if(f.type==="image"){if(val){var im=el("img","mcard-thumb");im.src=val;im.onclick=function(){modOpenImg(val);};body.appendChild(modRow(f.label,im,false));}return;}
+      if(consumed[f.k])return;
       var disp="";
-      if(f.type==="person")disp=modPersonLabel(rec[f.k],rec[f.k+"_snap"]);
-      else if(f.type==="people")disp=modPeopleLabels(val);
-      else if(f.type==="date")disp=fmtDate(val);
-      else if(f.type==="month")disp=fmtMonth(val);
-      else disp=val||"";
+      if(f.type==="people")disp=modPeopleLabels(rec[f.k]);
+      else if(f.type==="month")disp=fmtMonth(rec[f.k]);
+      else if(f.type==="check"){if(rec[f.k])disp=f.label.replace(/（.*）/,"");}
+      else disp=rec[f.k]||"";
       if(!disp)return;
-      body.appendChild(modRow(f.label,disp,f.type==="textarea"));
+      var row=modRow(f.label,disp,f.type==="textarea");
+      if(details.indexOf(f.k)!==-1)detailRows.push(row);else body.appendChild(row);
     });
+    card.appendChild(body);
+    if(detailRows.length){var det=el("div","mcard-details");det.hidden=true;detailRows.forEach(function(r){det.appendChild(r);});
+      var tgl=el("button","detail-toggle");tgl.type="button";tgl.textContent="詳細を見る";
+      tgl.onclick=function(){det.hidden=!det.hidden;tgl.textContent=det.hidden?"詳細を見る":"閉じる";};
+      card.appendChild(tgl);card.appendChild(det);}
     var act=el("div","mcard-act");
     var edit=el("button","mini-btn");edit.type="button";edit.textContent="編集";edit.onclick=function(){MOD_UI.editId=rec.id;renderModList();};
     var del=el("button","mini-btn danger");del.type="button";del.textContent="削除";del.onclick=function(){if(!confirm("この報告を削除しますか？"))return;var k=MOD_UI.key;MOD_DATA[k]=MOD_DATA[k].filter(function(x){return x.id!==rec.id;});persistMod(k).then(function(){renderModList();toast("削除しました");});};
     act.appendChild(edit);act.appendChild(del);
-    card.appendChild(body);card.appendChild(act);return card;
+    card.appendChild(act);return card;
   }
   function modEditCard(cfg,rec){
     var card=el("div","mcard editing");card.style.borderLeftColor=cfg.accent;
