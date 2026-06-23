@@ -173,6 +173,9 @@
   .msel-chip{display:inline-flex;align-items:center;gap:2px;background:var(--primary-tint);color:var(--primary-dark);font-size:12.5px;font-weight:600;border-radius:999px;padding:3px 4px 3px 11px}
   .msel-x{border:none;background:none;color:var(--primary-dark);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;border-radius:50%}
   .msel-x:hover{background:rgba(0,0,0,.10)}
+  .msel-tools{display:flex;gap:8px;align-items:stretch}
+  .msel-tools .msel-search{flex:1;min-width:0}
+  .msel-dept{flex:none;width:auto;max-width:44%}
   .msel-list{max-height:210px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:4px;margin-top:8px;display:flex;flex-direction:column;gap:1px;background:var(--surface)}
   .msel-row{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13.5px}
   .msel-row:hover{background:var(--surface-2)}
@@ -429,7 +432,7 @@
               <textarea id="detail" placeholder="状況・背景・経緯など"></textarea>
             </div>
           </div>
-          <div class="form-actions"><button type="submit" class="btn btn-primary">報告を保存</button></div>
+          <div class="form-actions"><button type="button" class="btn btn-ghost" id="cancelReport">キャンセル</button><button type="submit" class="btn btn-primary">報告を保存</button></div>
         </form>
       </div>
     </section>
@@ -1103,12 +1106,12 @@
         field.appendChild(lab);
         if(state.employees.length===0){var n0=el("div","mod-people-empty");n0.textContent="設定で社員を登録してください";field.appendChild(n0);wrapByKey[f.k]=field;getters.push({k:f.k,fn:function(){return [];}});grid.appendChild(field);return;}
         var sel={};((rec&&Array.isArray(rec[f.k]))?rec[f.k]:[]).forEach(function(id){sel[id]=true;});
-        var chips=el("div","msel-chips");var search=el("input","msel-search");search.type="text";search.placeholder="名前・部署で検索して選択";var listEl=el("div","msel-list");
+        var chips=el("div","msel-chips");var search=el("input","msel-search");search.type="text";search.placeholder="名前で検索";var deptSel=el("select","msel-dept");var od0=el("option");od0.value="";od0.textContent="全部署";deptSel.appendChild(od0);state.departments.forEach(function(d){var od=el("option");od.value=d.name;od.textContent=d.name;deptSel.appendChild(od);});var tools=el("div","msel-tools");tools.appendChild(search);tools.appendChild(deptSel);var listEl=el("div","msel-list");
         function eName(id){var e=state.employees.find(function(x){return x.id===id;});return e?e.name:"";}
         function rChips(){chips.innerHTML="";var ids=Object.keys(sel).filter(function(id){return sel[id];});if(!ids.length){var ph=el("span","msel-empty");ph.textContent="未選択";chips.appendChild(ph);return;}var cnt=el("span","msel-count");cnt.textContent=ids.length+"名選択中";chips.appendChild(cnt);ids.forEach(function(id){var c=el("span","msel-chip");c.textContent=eName(id);var x=el("button","msel-x");x.type="button";x.textContent="×";x.onclick=function(){sel[id]=false;rChips();rList();};c.appendChild(x);chips.appendChild(c);});}
-        function rList(){listEl.innerHTML="";var q=search.value.trim().toLowerCase();var shown=0;state.employees.forEach(function(e){var labl=e.name+"（"+deptName(e.deptId)+"）";if(q&&labl.toLowerCase().indexOf(q)===-1)return;shown++;var row=el("label","msel-row"+(sel[e.id]?" on":""));var cb=el("input");cb.type="checkbox";cb.checked=!!sel[e.id];cb.addEventListener("change",function(){sel[e.id]=cb.checked;row.classList.toggle("on",cb.checked);rChips();});var sp=el("span");sp.textContent=labl;row.appendChild(cb);row.appendChild(sp);listEl.appendChild(row);});if(!shown){var no=el("div","msel-none");no.textContent="該当する社員がいません";listEl.appendChild(no);}}
-        search.addEventListener("input",rList);
-        field.appendChild(chips);field.appendChild(search);field.appendChild(listEl);rChips();rList();
+        function rList(){listEl.innerHTML="";var q=search.value.trim().toLowerCase();var dq=deptSel.value;var shown=0;state.employees.forEach(function(e){if(dq&&deptName(e.deptId)!==dq)return;var labl=e.name+"（"+deptName(e.deptId)+"）";if(q&&labl.toLowerCase().indexOf(q)===-1)return;shown++;var row=el("label","msel-row"+(sel[e.id]?" on":""));var cb=el("input");cb.type="checkbox";cb.checked=!!sel[e.id];cb.addEventListener("change",function(){sel[e.id]=cb.checked;row.classList.toggle("on",cb.checked);rChips();});var sp=el("span");sp.textContent=labl;row.appendChild(cb);row.appendChild(sp);listEl.appendChild(row);});if(!shown){var no=el("div","msel-none");no.textContent="該当する社員がいません";listEl.appendChild(no);}}
+        search.addEventListener("input",rList);deptSel.addEventListener("change",rList);
+        field.appendChild(chips);field.appendChild(tools);field.appendChild(listEl);rChips();rList();
         wrapByKey[f.k]=field;getters.push({k:f.k,fn:function(){return Object.keys(sel).filter(function(id){return sel[id];});}});grid.appendChild(field);return;
       }
       if(f.type==="image"){var ibox=el("div","mod-img");imgState[f.k]=rec?(rec[f.k]||""):"";var prev=el("div","mod-img-prev");function refresh(){prev.innerHTML="";if(imgState[f.k]){var im=el("img");im.src=imgState[f.k];im.onclick=function(){modOpenImg(imgState[f.k]);};prev.appendChild(im);var rm=el("button","mini-btn");rm.type="button";rm.textContent="画像を削除";rm.onclick=function(){imgState[f.k]="";refresh();};prev.appendChild(rm);}}var file=el("input");file.type="file";file.accept="image/*";file.addEventListener("change",function(ev){var fo=ev.target.files&&ev.target.files[0];if(fo)modDownscale(fo,function(d){imgState[f.k]=d;refresh();});ev.target.value="";});field.appendChild(lab);field.appendChild(file);field.appendChild(prev);refresh();getters.push({k:f.k,fn:function(){return imgState[f.k]||"";}});grid.appendChild(field);return;}
@@ -1205,9 +1208,11 @@
     var panel=el("section","panel");panel.hidden=true;
     var ph=el("div","panel-head");ph.innerHTML='<span class="mark"></span><h2>新規追加</h2>';
     var pb=el("div","panel-body");var form=buildModForm(cfg,null);
-    var actions=el("div","form-actions");var saveBtn=el("button","btn btn-primary");saveBtn.type="button";saveBtn.textContent="保存";actions.appendChild(saveBtn);
+    var actions=el("div","form-actions");var cancelBtn=el("button","btn btn-ghost");cancelBtn.type="button";cancelBtn.textContent="キャンセル";var saveBtn=el("button","btn btn-primary");saveBtn.type="button";saveBtn.textContent="保存";actions.appendChild(cancelBtn);actions.appendChild(saveBtn);
     pb.appendChild(form.wrap);pb.appendChild(actions);panel.appendChild(ph);panel.appendChild(pb);
+    function closePanel(){panel.hidden=true;toggle.classList.remove("open");toggle.textContent=cfg.addLabel;}
     toggle.onclick=function(){panel.hidden=!panel.hidden;toggle.classList.toggle("open",!panel.hidden);toggle.textContent=panel.hidden?cfg.addLabel:"× 閉じる";};
+    cancelBtn.onclick=closePanel;
     saveBtn.onclick=function(){var o=form.read();if(!form.validate(o))return;cfg.fields.forEach(function(f){if(f.type==="person")o[f.k+"_snap"]=modPersonLabel(o[f.k]);});o.id=uid();o.createdAt=Date.now();MOD_DATA[cfg.key].push(o);persistMod(cfg.key).then(function(){renderModule(cfg);toast("保存しました");});};
     var tools=el("div","list-tools");var search=el("div","search");
     search.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>';
@@ -1344,6 +1349,7 @@
   function bind(){
     $("#reportForm").addEventListener("submit",onCreate);
     $("#newReportToggle").addEventListener("click",function(){setReportForm($("#newReportPanel").hidden);});
+    var crBtn=$("#cancelReport");if(crBtn)crBtn.addEventListener("click",function(){setReportForm(false);});
 
     $("#summary").addEventListener("click",function(ev){var b=ev.target.closest(".stat");if(!b)return;
       state.filter=b.dataset.f;renderList();});
