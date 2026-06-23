@@ -458,19 +458,19 @@
     </header>
 
     <section class="panel">
-      <div class="panel-head"><span class="mark"></span><h2>データの保存先</h2><span class="note">Google スプレッドシート連携</span></div>
+      <div class="panel-head"><span class="mark"></span><h2>データの保存先</h2><span class="note">Supabase（クラウド共有）</span></div>
       <div class="panel-body">
         <p class="sheets-status" id="sheetsStatus"></p>
         <div class="grid">
-          <div class="field full"><label for="sheetsUrl">ウェブアプリのURL</label><input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
-          <div class="field full"><label for="sheetsToken">合言葉（TOKEN）</label><input type="text" id="sheetsToken" placeholder="スクリプトの TOKEN と同じ値"></div>
+          <div class="field full"><label for="sheetsUrl">Supabase の Project URL</label><input type="text" id="sheetsUrl" placeholder="https://xxxx.supabase.co"></div>
+          <div class="field full"><label for="sheetsToken">公開キー（Publishable / anon）</label><input type="text" id="sheetsToken" placeholder="sb_publishable_... または eyJ..."></div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-ghost btn-sm" id="sheetsTest">接続テスト</button>
           <button type="button" class="btn btn-ghost btn-sm" id="sheetsClear">連携を解除</button>
           <button type="button" class="btn btn-primary btn-sm" id="sheetsSave">保存して接続</button>
         </div>
-        <p class="sheets-hint">空欄のまま保存すると、この端末内に保存します。入力して保存するとGoogleスプレッドシートに保存・共有されます。URL・合言葉は社内のみで共有してください。</p>
+        <p class="sheets-hint">空欄のまま保存するとこの端末内に保存します。入力して保存するとSupabaseに保存・共有されます。公開キー（Publishable/anon）はブラウザ用の公開キーです。秘密キー(secret/service_role)は入れないでください。</p>
       </div>
     </section>
 
@@ -528,37 +528,37 @@
   }
 
   var DEPT_KEY="config:departments",EMP_KEY="config:employees",DATA_KEY="data:reports";
-  /* ===== Google スプレッドシート連携設定 ===== */
-  /* 公開した「ウェブアプリのURL」と「合言葉(TOKEN)」を下に貼り付けてください。
-     両方を入れるとデータはスプレッドシートに保存・共有されます（空ならこの端末内に保存）。 */
+  /* ===== Supabase 連携設定 ===== */
+  /* Project URL と 公開キー(Publishable/anon)。公開サイトでは自動接続。設定画面で変更可。
+     公開キーはブラウザ用の公開キーです（秘密キー secret/service_role は入れないこと）。 */
   var SHEETS={
-    url:"",     /* 例: "https://script.google.com/macros/s/AKfy.../exec" */
-    token:""    /* 例: "komatte-7f3a9b"（スクリプトの TOKEN と同じ値） */
+    url:"https://peqsyzcodwcbbgxhrhxh.supabase.co",
+    token:"sb_publishable__H820vcxIfoubhaVLXE8TQ_WkDiHFSV"
   };
   function remoteOn(){return !!(SHEETS.url&&SHEETS.token);}
-  function loadSheetsCfg(){try{var s=localStorage.getItem("config:sheets");if(s){var o=JSON.parse(s)||{};if(o.url)SHEETS.url=o.url;if(o.token)SHEETS.token=o.token;}}catch(e){}}
-  function saveSheetsCfg(){try{localStorage.setItem("config:sheets",JSON.stringify({url:SHEETS.url,token:SHEETS.token}));}catch(e){}}
-  var KOMATTE_SHEET="困っている",EMP_SHEET="社員",DEPT_SHEET="部署";
-  var MOD_SHEET={kaizen:"改善改良",study:"勉強会研修会",failure:"失敗事例",reading:"読書資格",thanks:"感謝の言葉",growth:"社員成長支援"};
-  var MOD_COLS={
-    kaizen:{reportDate:"報告日",person:"提案者",item:"改良改善提案項目",current:"現状",toward:"改善に向けて",result:"改善の結果",done:"改善済"},
-    study:{reportDate:"開催日",person:"企画者",participants:"参加者",content:"企画・参加内容",detail:"詳細"},
-    failure:{reportDate:"報告日",person:"報告者",caseTitle:"失敗事例",caseDetail:"事例詳細",cause:"主要原因",solution:"解決策",implementers:"実施担当者",completion:"完了時期",done:"対策済"},
-    reading:{reportDate:"報告日",kind:"項目",person:"名前",title:"書籍名・資格取得内容",detail:"詳細"},
-    thanks:{reportDate:"報告日",person:"報告者",thankedPeople:"感謝を受けた人",customer:"お客様の情報",detail:"詳細"},
-    growth:{reportDate:"実施日",person:"報告者",item:"利用品目",useDetail:"利用詳細",effect:"学んだ内容・得られた効果（利用後の効果）"}
+  function loadSheetsCfg(){try{var s=localStorage.getItem("config:supabase");if(s){var o=JSON.parse(s)||{};if("url" in o)SHEETS.url=o.url;if("token" in o)SHEETS.token=o.token;}}catch(e){}}
+  function saveSheetsCfg(){try{localStorage.setItem("config:supabase",JSON.stringify({url:SHEETS.url,token:SHEETS.token}));}catch(e){}}
+  var KOMATTE_TBL="komatte",EMP_TBL="employees",DEPT_TBL="departments";
+  var MOD_DBCOLS={
+    kaizen:{reportDate:"report_date",person:"person",item:"item",current:"current_state",toward:"toward",result:"result",done:"done"},
+    study:{reportDate:"report_date",person:"person",participants:"participants",content:"content",detail:"detail"},
+    failure:{reportDate:"report_date",person:"person",caseTitle:"case_title",caseDetail:"case_detail",cause:"cause",solution:"solution",implementers:"implementers",completion:"completion",done:"done"},
+    reading:{reportDate:"report_date",kind:"kind",person:"person",title:"title",detail:"detail"},
+    thanks:{reportDate:"report_date",person:"person",thankedPeople:"thanked_people",customer:"customer",detail:"detail"},
+    growth:{reportDate:"report_date",person:"person",item:"item",useDetail:"use_detail",effect:"effect"}
   };
-  function jsonp(url){return new Promise(function(resolve,reject){var cb="__scb_"+Date.now()+"_"+Math.floor(Math.random()*100000);var s=document.createElement("script");var done=false;var timer=setTimeout(function(){if(!done){clean();reject(new Error("timeout"));}},15000);function clean(){done=true;clearTimeout(timer);try{delete window[cb];}catch(e){window[cb]=undefined;}if(s.parentNode)s.parentNode.removeChild(s);}window[cb]=function(data){clean();resolve(data);};s.onerror=function(){clean();reject(new Error("network"));};s.src=url+(url.indexOf("?")>=0?"&":"?")+"callback="+cb;document.body.appendChild(s);});}
-  async function sheetLoad(sheet){var u=SHEETS.url+"?action=load&sheet="+encodeURIComponent(sheet)+"&token="+encodeURIComponent(SHEETS.token);var d=await jsonp(u);if(!d||!d.ok)throw new Error((d&&d.error)||"load error");return d.rows||[];}
-  async function sheetSave(sheet,header,rows){var res=await fetch(SHEETS.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"save",token:SHEETS.token,sheet:sheet,header:header,rows:rows})});var d=await res.json();if(!d||!d.ok)throw new Error((d&&d.error)||"save error");return d;}
+  function supaBase(){return SHEETS.url.replace(/\/+$/,"")+"/rest/v1/";}
+  function supaHeaders(extra){var h={apikey:SHEETS.token,Authorization:"Bearer "+SHEETS.token,"Content-Type":"application/json"};if(extra)for(var k in extra)h[k]=extra[k];return h;}
+  async function supaSelect(table,order){var u=supaBase()+table+"?select=*"+(order?"&order="+order:"");var res=await fetch(u,{headers:supaHeaders()});if(!res.ok)throw new Error("load "+res.status);return await res.json();}
+  async function supaReplace(table,rows){var base=supaBase()+table;var del=await fetch(base+"?id=gte.0",{method:"DELETE",headers:supaHeaders()});if(!del.ok&&del.status!==404&&del.status!==406)throw new Error("delete "+del.status);if(rows&&rows.length){var ins=await fetch(base,{method:"POST",headers:supaHeaders({Prefer:"return=minimal"}),body:JSON.stringify(rows)});if(!ins.ok)throw new Error("insert "+ins.status);}return {ok:true};}
+  async function supaPing(url,key){try{var res=await fetch(url.replace(/\/+$/,"")+"/rest/v1/departments?select=id&limit=1",{headers:{apikey:key,Authorization:"Bearer "+key}});return res.ok;}catch(e){throw e;}}
   function modPersonName(id,snap){if(id){var e=state.employees.find(function(x){return x.id===id;});if(e)return e.name;}return snap||"";}
-  function modPeopleNames(ids){return (ids||[]).map(function(id){var e=state.employees.find(function(x){return x.id===id;});return e?e.name:"";}).filter(Boolean).join("、");}
+  function modPeopleNamesArr(ids){return (ids||[]).map(function(id){var e=state.employees.find(function(x){return x.id===id;});return e?e.name:"";}).filter(Boolean);}
   function empIdByName(n){n=(n||"").replace(/（[^）]*）|\([^)]*\)/,"").trim();var e=state.employees.find(function(x){return x.name===n;});return e?e.id:"";}
-  function modSheetHeader(cfg){return cfg.fields.map(function(f){return MOD_COLS[cfg.key][f.k];});}
-  function modRecToRow(cfg,rec){var cols=MOD_COLS[cfg.key];var row={};cfg.fields.forEach(function(f){var col=cols[f.k];var v=rec[f.k];if(f.type==="person")row[col]=modPersonName(rec[f.k],rec[f.k+"_snap"]);else if(f.type==="people")row[col]=modPeopleNames(rec[f.k]);else if(f.type==="check")row[col]=v?"○":"";else row[col]=(v==null?"":v);});return row;}
-  function modRowToRec(cfg,row){var cols=MOD_COLS[cfg.key];var rec={id:uid(),createdAt:Date.now()+Math.floor(Math.random()*100000)};cfg.fields.forEach(function(f){var col=cols[f.k];var raw=row[col];var s=(raw==null?"":String(raw)).trim();if(f.type==="person"){var id=empIdByName(s);rec[f.k]=id;rec[f.k+"_snap"]=id?"":s;}else if(f.type==="people"){rec[f.k]=s.split(/[、,\/]/).map(function(t){return t.trim();}).filter(Boolean).map(function(n){return empIdByName(n);}).filter(Boolean);}else if(f.type==="check"){rec[f.k]=(s==="○"||s==="✓"||s==="レ"||s.toLowerCase()==="true"||s==="1"||s==="はい");}else if(f.type==="date"){rec[f.k]=normDate(raw);}else if(f.type==="month"){rec[f.k]=normMonth(raw);}else{rec[f.k]=s;}});return rec;}
-  function komatteToRow(r){var p=resolveProposer(r);var cats=Array.isArray(r.category)?r.category:(r.category?[r.category]:[]);return {"報告日":r.reportDate||"","提案者":p.name||"","部署":p.dept||"","お客様の困っている情報":r.customerIssue||"","情報の詳細":r.detail||"","解決策":r.solution||"","実施担当者":(r.implementers||[]).join("、"),"完了時期":r.completionDate||"","備考":r.completionNote||"","カテゴリ":cats.join("、"),"対応状況":r.status||""};}
-  function komatteFromRow(row){var nm=String(row["提案者"]||"").trim();var emp=state.employees.find(function(x){return x.name===nm;});var cats=String(row["カテゴリ"]||"").split(/[、,\/]/).map(function(s){return s.trim();}).filter(Boolean);var imp=String(row["実施担当者"]||"").split(/[、,\/]/).map(function(s){return s.trim();}).filter(Boolean);var st=String(row["対応状況"]||"").trim();if(["進行中","解決済","解決不可能"].indexOf(st)===-1)st="進行中";return {id:uid(),createdAt:Date.now()+Math.floor(Math.random()*100000),reportDate:normDate(row["報告日"]),proposerId:emp?emp.id:"",proposerName:emp?emp.name:nm,proposerDeptName:emp?deptName(emp.deptId):String(row["部署"]||"").trim(),customerIssue:String(row["お客様の困っている情報"]||"").trim(),detail:String(row["情報の詳細"]||"").trim(),solution:String(row["解決策"]||"").trim(),implementers:imp,completionDate:normMonth(row["完了時期"]),completionNote:String(row["備考"]||"").trim(),category:cats,status:st};}
+  function modRecToDb(cfg,rec){var cols=MOD_DBCOLS[cfg.key];var row={};cfg.fields.forEach(function(f){var col=cols[f.k];var v=rec[f.k];if(f.type==="person")row[col]=modPersonName(rec[f.k],rec[f.k+"_snap"])||null;else if(f.type==="people")row[col]=modPeopleNamesArr(rec[f.k]);else if(f.type==="check")row[col]=!!v;else if(f.type==="date")row[col]=v||null;else row[col]=(v==null||v==="")?null:v;});return row;}
+  function modDbToRec(cfg,row){var cols=MOD_DBCOLS[cfg.key];var rec={id:uid(),createdAt:Date.now()+Math.floor(Math.random()*100000)};cfg.fields.forEach(function(f){var col=cols[f.k];var raw=row[col];if(f.type==="person"){var nm=(raw==null?"":String(raw)).trim();var id=empIdByName(nm);rec[f.k]=id;rec[f.k+"_snap"]=id?"":nm;}else if(f.type==="people"){var arr=Array.isArray(raw)?raw:[];rec[f.k]=arr.map(function(n){return empIdByName(String(n));}).filter(Boolean);}else if(f.type==="check"){rec[f.k]=(raw===true||raw==="true");}else if(f.type==="date"){rec[f.k]=raw?String(raw).slice(0,10):"";}else{rec[f.k]=(raw==null?"":String(raw));}});return rec;}
+  function komatteToDb(r){var p=resolveProposer(r);var cats=Array.isArray(r.category)?r.category:(r.category?[r.category]:[]);return {report_date:r.reportDate||null,proposer:p.name||null,dept:p.dept||null,customer_issue:r.customerIssue||null,detail:r.detail||null,solution:r.solution||null,implementers:(r.implementers||[]),completion:r.completionDate||null,note:r.completionNote||null,category:cats,status:r.status||null};}
+  function komatteFromDb(row){var nm=(row.proposer==null?"":String(row.proposer)).trim();var emp=state.employees.find(function(x){return x.name===nm;});var st=(row.status==null?"":String(row.status)).trim();if(["進行中","解決済","解決不可能"].indexOf(st)===-1)st="進行中";return {id:uid(),createdAt:Date.now()+Math.floor(Math.random()*100000),reportDate:row.report_date?String(row.report_date).slice(0,10):"",proposerId:emp?emp.id:"",proposerName:emp?emp.name:nm,proposerDeptName:emp?deptName(emp.deptId):(row.dept==null?"":String(row.dept)),customerIssue:row.customer_issue||"",detail:row.detail||"",solution:row.solution||"",implementers:Array.isArray(row.implementers)?row.implementers:[],completionDate:row.completion||"",completionNote:row.note||"",category:Array.isArray(row.category)?row.category:[],status:st};}
   var DEFAULT_DEPTS=["営業部","カスタマーサポート部","技術部","製造部","総務部"];
   var state={departments:[],employees:[],reports:[],filter:"all",search:"",sort:"report",catFilter:[],prevOnly:false};
   var editingDeptId=null,editingEmpId=null;
@@ -575,9 +575,9 @@
   var toastTimer;
   function toast(m){var t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove("show");},2200);}
 
-  async function persistDepts(){if(remoteOn()){try{return await sheetSave(DEPT_SHEET,["部署名"],state.departments.map(function(d){return {"部署名":d.name};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(DEPT_KEY,JSON.stringify(state.departments));}
-  async function persistEmps(){if(remoteOn()){try{return await sheetSave(EMP_SHEET,["名前","部署"],state.employees.map(function(e){return {"名前":e.name,"部署":deptName(e.deptId)};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(EMP_KEY,JSON.stringify(state.employees));}
-  async function persistReports(){if(remoteOn()){try{return await sheetSave(KOMATTE_SHEET,IO_HEADER,state.reports.map(komatteToRow));}catch(e){toast("保存に失敗しました（接続を確認）");throw e;}}return await sset(DATA_KEY,JSON.stringify(state.reports));}
+  async function persistDepts(){if(remoteOn()){try{return await supaReplace(DEPT_TBL,state.departments.map(function(d,i){return {name:d.name,sort:i};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(DEPT_KEY,JSON.stringify(state.departments));}
+  async function persistEmps(){if(remoteOn()){try{return await supaReplace(EMP_TBL,state.employees.map(function(e,i){return {name:e.name,dept:deptName(e.deptId),sort:i};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(EMP_KEY,JSON.stringify(state.employees));}
+  async function persistReports(){if(remoteOn()){try{return await supaReplace(KOMATTE_TBL,state.reports.map(komatteToDb));}catch(e){toast("保存に失敗しました（接続を確認）");throw e;}}return await sset(DATA_KEY,JSON.stringify(state.reports));}
 
   function deptName(id){var d=state.departments.find(function(x){return x.id===id;});return d?d.name:"";}
   function resolveProposer(r){
@@ -1062,11 +1062,11 @@
   function modStoreKey(k){return "data:reports:"+k;}
   async function loadMod(k){
     if(MOD_DATA[k]&&!remoteOn())return;
-    if(remoteOn()){try{var rows=await sheetLoad(MOD_SHEET[k]);var cfg=MOD_CFGS[k];MOD_DATA[k]=rows.map(function(row){return modRowToRec(cfg,row);});}catch(e){MOD_DATA[k]=MOD_DATA[k]||[];toast("読み込みに失敗しました（接続を確認）");}return;}
+    if(remoteOn()){try{var rows=await supaSelect(k,"report_date.asc");var cfg=MOD_CFGS[k];MOD_DATA[k]=rows.map(function(row){return modDbToRec(cfg,row);});}catch(e){MOD_DATA[k]=MOD_DATA[k]||[];toast("読み込みに失敗しました（接続を確認）");}return;}
     var r=await sget(modStoreKey(k));
     if(r&&r.value){try{MOD_DATA[k]=JSON.parse(r.value)||[];}catch(e){MOD_DATA[k]=[];}}else MOD_DATA[k]=[];
   }
-  async function persistMod(k){if(remoteOn()){var cfg=MOD_CFGS[k];try{return await sheetSave(MOD_SHEET[k],modSheetHeader(cfg),(MOD_DATA[k]||[]).map(function(rec){return modRecToRow(cfg,rec);}));}catch(e){toast("保存に失敗しました（接続を確認）");throw e;}}return await sset(modStoreKey(k),JSON.stringify(MOD_DATA[k]||[]));}
+  async function persistMod(k){if(remoteOn()){var cfg=MOD_CFGS[k];try{return await supaReplace(k,(MOD_DATA[k]||[]).map(function(rec){return modRecToDb(cfg,rec);}));}catch(e){toast("保存に失敗しました（接続を確認）");throw e;}}return await sset(modStoreKey(k),JSON.stringify(MOD_DATA[k]||[]));}
   function modThemeApply(cfg){var v=$("#moduleView");v.style.setProperty("--primary",cfg.accent);v.style.setProperty("--primary-dark",cfg.dark);v.style.setProperty("--primary-tint",cfg.tint);document.body.style.background=cfg.bg;}
   function modPersonLabel(id,snap){if(id){var e=state.employees.find(function(x){return x.id===id;});if(e)return e.name+"（"+deptName(e.deptId)+"）";}return snap||"";}
   function modPeopleLabels(ids){return (ids||[]).map(function(id){var e=state.employees.find(function(x){return x.id===id;});return e?e.name:"";}).filter(Boolean).join("、");}
@@ -1293,7 +1293,7 @@
       state.filter=b.dataset.f;renderList();});
     $("#searchInput").addEventListener("input",function(ev){state.search=ev.target.value.trim();renderList();});
     $("#prevMonthChk").addEventListener("change",function(ev){state.prevOnly=ev.target.checked;ev.target.parentNode.classList.toggle("on",ev.target.checked);renderList();});
-    $("#sheetsTest").addEventListener("click",async function(){var u=$("#sheetsUrl").value.trim(),t=$("#sheetsToken").value.trim();if(!u||!t){toast("URLと合言葉を入力してください");return;}try{var d=await jsonp(u+"?action=ping&token="+encodeURIComponent(t));if(d&&d.ok){toast("接続できました");var tb=$("#sheetsTest");if(tb)tb.disabled=true;}else{toast("接続できませんでした（合言葉をご確認ください）");}}catch(e){toast("接続できませんでした（このプレビュー内ではテストできません。公開サイトかブラウザでお試しください）");}});
+    $("#sheetsTest").addEventListener("click",async function(){var u=$("#sheetsUrl").value.trim(),t=$("#sheetsToken").value.trim();if(!u||!t){toast("URLと合言葉を入力してください");return;}try{var ok=await supaPing(u,t);if(ok){toast("接続できました");var tb=$("#sheetsTest");if(tb)tb.disabled=true;}else{toast("接続できませんでした（URL・公開キーをご確認ください）");}}catch(e){toast("接続できませんでした（このプレビュー内ではテストできません。公開サイトかブラウザでお試しください）");}});
     $("#sheetsSave").addEventListener("click",function(){SHEETS.url=$("#sheetsUrl").value.trim();SHEETS.token=$("#sheetsToken").value.trim();saveSheetsCfg();updateSheetsStatus();toast("保存しました。読み込み直します");setTimeout(function(){location.reload();},700);});
     $("#sheetsClear").addEventListener("click",function(){if(!confirm("連携を解除して、この端末内保存に戻しますか？"))return;SHEETS.url="";SHEETS.token="";saveSheetsCfg();$("#sheetsUrl").value="";$("#sheetsToken").value="";updateSheetsStatus();toast("解除しました。読み込み直します");setTimeout(function(){location.reload();},700);});
     function reenableTest(){var tb=$("#sheetsTest");if(tb)tb.disabled=false;}
@@ -1328,9 +1328,9 @@
     var mn=await sget(MENU_KEY);
     if(mn&&mn.value){try{(JSON.parse(mn.value)||[]).forEach(function(o){var t=state.menu.find(function(m){return m.key===o.key;});if(t){if(o.name)t.name=o.name;if(o.desc!=null)t.desc=o.desc;}});}catch(e){}}
     if(remoteOn()){
-      try{var _d=await sheetLoad(DEPT_SHEET);state.departments=_d.map(function(x){return {id:uid(),name:String(x["部署名"]||"").trim()};}).filter(function(d){return d.name;});}catch(e){state.departments=[];toast("接続に失敗しました。URL・合言葉をご確認ください");}
-      try{var _e=await sheetLoad(EMP_SHEET);state.employees=_e.map(function(x){var dn=String(x["部署"]||"").trim();var dp=state.departments.find(function(d){return d.name===dn;});return {id:uid(),name:String(x["名前"]||"").trim(),deptId:dp?dp.id:""};}).filter(function(e){return e.name;});}catch(e){state.employees=[];}
-      try{var _r=await sheetLoad(KOMATTE_SHEET);state.reports=_r.map(komatteFromRow);}catch(e){state.reports=[];}
+      try{var _d=await supaSelect(DEPT_TBL,"sort.asc");state.departments=_d.map(function(x){return {id:uid(),name:String(x.name||"").trim()};}).filter(function(d){return d.name;});}catch(e){state.departments=[];toast("接続に失敗しました。URL・公開キーをご確認ください");}
+      try{var _e=await supaSelect(EMP_TBL,"sort.asc");state.employees=_e.map(function(x){var dn=String(x.dept||"").trim();var dp=state.departments.find(function(d){return d.name===dn;});return {id:uid(),name:String(x.name||"").trim(),deptId:dp?dp.id:""};}).filter(function(e){return e.name;});}catch(e){state.employees=[];}
+      try{var _r=await supaSelect(KOMATTE_TBL,"report_date.asc");state.reports=_r.map(komatteFromDb);}catch(e){state.reports=[];}
     } else {
     // departments (migrate string[] -> object[])
     var d=await sget(DEPT_KEY);
