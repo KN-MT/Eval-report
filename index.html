@@ -158,21 +158,20 @@
   .mcard-details{margin-top:4px;padding-top:8px;border-top:1px dashed var(--line)}
   .kz-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:11px}
   .kz-titlewrap{flex:1;min-width:0}
-  .kz-title{font-size:16px;font-weight:800;color:var(--ink);line-height:1.35}
-  .kz-sub{display:flex;flex-wrap:wrap;gap:2px 16px;margin-top:4px;font-size:12px;color:var(--ink-soft)}
+  .kz-sub{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:12px;color:var(--ink-soft)}
+  .kz-title{font-size:16px;font-weight:800;color:var(--ink);line-height:1.35;margin-top:3px}
   .kz-pill{flex:none;background:#FFF1DD;color:#B26A1B;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 11px;white-space:nowrap}
-  .kz-ba{display:flex;align-items:stretch;gap:10px}
-  .kz-box{flex:1;min-width:0;border-radius:10px;padding:9px 12px}
+  .kz-flow{display:flex;flex-direction:column;align-items:stretch}
+  .kz-box{border-radius:10px;padding:9px 12px}
   .kz-before{background:#F1F4F8;border:1px solid #E1E7EF}
   .kz-after{background:#E8F6EE;border:1px solid #CFEBDB}
+  .kz-act{background:#fff;border:1.5px solid var(--primary);border-radius:10px;padding:9px 12px}
+  .kz-act-l{font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:3px}
+  .kz-down{display:flex;justify-content:center;color:var(--ink-faint);font-size:16px;line-height:1;padding:4px 0}
   .kz-box-l{font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:3px}
   .kz-before .kz-box-l{color:#6B7B8C}
   .kz-after .kz-box-l{color:#1F8A55}
   .kz-box-v{font-size:13.5px;color:var(--ink);line-height:1.5;white-space:pre-wrap;word-break:break-word}
-  .kz-arrow{display:flex;align-items:center;color:var(--ink-faint);font-size:18px;font-weight:700;flex:none}
-  .kz-toward{margin-top:10px;border-top:1px dashed var(--line);padding-top:9px}
-  .kz-toward .kz-box-l{color:var(--ink-soft)}
-  @media(max-width:560px){.kz-ba{flex-direction:column}.kz-arrow{transform:rotate(90deg);align-self:center}}
   .mcard-l{flex:0 0 132px;color:var(--ink-soft);font-size:12.5px;font-weight:600;padding-top:1px}
   .mcard-v{flex:1;color:var(--ink);white-space:normal;word-break:break-word}
   .mcard-v.ml{white-space:pre-wrap;line-height:1.6}
@@ -1047,8 +1046,8 @@
         {k:"reportDate",label:"報告日",type:"date",req:true},
         {k:"person",label:"提案者",type:"person",req:true},
         {k:"item",label:"改良改善提案項目",type:"text",full:true,ph:"例：マニュアル作成",req:true},
-        {k:"current",label:"現状",type:"textarea",full:true,ph:"例：手順が共有されておらず、対応できる人が限られていた。"},
-        {k:"toward",label:"改善に向けて",type:"textarea",full:true,ph:"例：新しくマニュアルを作成しました。"},
+        {k:"current",label:"改善前の状態",type:"textarea",full:true,ph:"例：手順が共有されておらず、対応できる人が限られていた。"},
+        {k:"toward",label:"改善に向けて実施した事",type:"textarea",full:true,ph:"例：新しくマニュアルを作成しました。"},
         {k:"result",label:"改善の結果",type:"textarea",full:true,ph:"例：担当者以外や新人も対応可能になりました。"},
         {k:"done",label:"改善済（改善が完了している場合）",type:"check",full:true}
       ]},
@@ -1160,17 +1159,17 @@
   function kaizenCardEl(cfg,rec){
     var card=el("div","mcard kz-card");card.style.borderLeftColor=cfg.accent;
     var head=el("div","kz-head");var tw=el("div","kz-titlewrap");
-    var title=el("div","kz-title");title.textContent=rec.item||"（項目未入力）";
     var sub=el("div","kz-sub");var s1=el("span");s1.textContent=fmtDate(rec.reportDate);var s2=el("span");s2.textContent=modPersonLabel(rec.person,rec.person_snap);sub.appendChild(s1);sub.appendChild(s2);
-    tw.appendChild(title);tw.appendChild(sub);head.appendChild(tw);
+    var title=el("div","kz-title");title.textContent=rec.item||"（項目未入力）";
+    tw.appendChild(sub);tw.appendChild(title);head.appendChild(tw);
     if(rec.done){var b=el("span","mod-badge");b.textContent="改善済";b.style.background=cfg.tint;b.style.color=cfg.dark;head.appendChild(b);}else{var pill=el("span","kz-pill");pill.textContent="改善中";head.appendChild(pill);}
     card.appendChild(head);
-    var ba=el("div","kz-ba");
-    var bf=el("div","kz-box kz-before");var bfl=el("div","kz-box-l");bfl.textContent="現状";var bfv=el("div","kz-box-v");bfv.textContent=rec.current||"—";bf.appendChild(bfl);bf.appendChild(bfv);
-    var ar=el("div","kz-arrow");ar.textContent="→";
-    var af=el("div","kz-box kz-after");var afl=el("div","kz-box-l");afl.textContent="改善後";var afv=el("div","kz-box-v");afv.textContent=rec.result||"—";af.appendChild(afl);af.appendChild(afv);
-    ba.appendChild(bf);ba.appendChild(ar);ba.appendChild(af);card.appendChild(ba);
-    if(rec.toward){var tdw=el("div","kz-toward");var tl=el("div","kz-box-l");tl.textContent="改善に向けて";var tv=el("div","kz-box-v");tv.textContent=rec.toward;tdw.appendChild(tl);tdw.appendChild(tv);card.appendChild(tdw);}
+    var flow=el("div","kz-flow");
+    var bf=el("div","kz-box kz-before");var bfl=el("div","kz-box-l");bfl.textContent="改善前の状態";var bfv=el("div","kz-box-v");bfv.textContent=rec.current||"—";bf.appendChild(bfl);bf.appendChild(bfv);flow.appendChild(bf);
+    if(rec.toward){var d1=el("div","kz-down");d1.textContent="↓";flow.appendChild(d1);var actB=el("div","kz-act");actB.style.borderColor=cfg.accent;var al=el("div","kz-act-l");al.textContent="改善に向けて実施した事";al.style.color=cfg.dark;var av=el("div","kz-box-v");av.textContent=rec.toward;actB.appendChild(al);actB.appendChild(av);flow.appendChild(actB);}
+    var d2=el("div","kz-down");d2.textContent="↓";flow.appendChild(d2);
+    var af=el("div","kz-box kz-after");var afl=el("div","kz-box-l");afl.textContent="改善後";var afv=el("div","kz-box-v");afv.textContent=rec.result||"—";af.appendChild(afl);af.appendChild(afv);flow.appendChild(af);
+    card.appendChild(flow);
     var act=el("div","mcard-act");
     var edit=el("button","mini-btn");edit.type="button";edit.textContent="編集";edit.onclick=function(){MOD_UI.editId=rec.id;renderModList();};
     var del=el("button","mini-btn danger");del.type="button";del.textContent="削除";del.onclick=function(){if(!confirm("この報告を削除しますか？"))return;var k=MOD_UI.key;MOD_DATA[k]=MOD_DATA[k].filter(function(x){return x.id!==rec.id;});persistMod(k).then(function(){renderModList();toast("削除しました");});};
