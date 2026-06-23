@@ -167,6 +167,18 @@
   .mod-check input{width:16px;height:16px;accent-color:var(--primary)}
   .mod-people{display:flex;flex-wrap:wrap;gap:8px}
   .mod-people-empty{color:var(--ink-faint);font-size:13px}
+  .msel-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:24px;margin-bottom:8px}
+  .msel-empty{font-size:12.5px;color:var(--ink-faint)}
+  .msel-count{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-right:2px}
+  .msel-chip{display:inline-flex;align-items:center;gap:2px;background:var(--primary-tint);color:var(--primary-dark);font-size:12.5px;font-weight:600;border-radius:999px;padding:3px 4px 3px 11px}
+  .msel-x{border:none;background:none;color:var(--primary-dark);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;border-radius:50%}
+  .msel-x:hover{background:rgba(0,0,0,.10)}
+  .msel-list{max-height:210px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:4px;margin-top:8px;display:flex;flex-direction:column;gap:1px;background:var(--surface)}
+  .msel-row{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13.5px}
+  .msel-row:hover{background:var(--surface-2)}
+  .msel-row.on{background:var(--primary-tint)}
+  .msel-row input{width:15px;height:15px;accent-color:var(--primary);flex:none}
+  .msel-none{font-size:12.5px;color:var(--ink-faint);padding:10px}
   .btn:disabled,.btn[disabled]{opacity:.5;cursor:not-allowed}
   .sheets-status{font-size:13.5px;font-weight:700;margin:0 0 14px}
   .sheets-status.on{color:var(--primary)}
@@ -1087,7 +1099,18 @@
       var lab=el("label");lab.innerHTML=esc(f.label)+(f.req?'<span class="req">*</span>':"");
       var inp;
       if(f.type==="check"){var wc=el("label","mod-check");var cb=el("input");cb.type="checkbox";if(rec&&rec[f.k])cb.checked=true;var sp=el("span");sp.textContent=f.label;wc.appendChild(cb);wc.appendChild(sp);field.appendChild(wc);getters.push({k:f.k,fn:function(){return cb.checked;}});wrapByKey[f.k]=field;chkByKey[f.k]=cb;grid.appendChild(field);return;}
-      if(f.type==="people"){var box=el("div","mod-people");if(state.employees.length===0){var n=el("div","mod-people-empty");n.textContent="設定で社員を登録してください";box.appendChild(n);}var chosen=(rec&&Array.isArray(rec[f.k]))?rec[f.k].slice():[];state.employees.forEach(function(e){var li=el("label","chk"+(chosen.indexOf(e.id)!==-1?" on":""));var cb=el("input");cb.type="checkbox";cb.value=e.id;cb.checked=chosen.indexOf(e.id)!==-1;cb.addEventListener("change",function(){li.classList.toggle("on",cb.checked);});var sp=el("span");sp.textContent=e.name;li.appendChild(cb);li.appendChild(sp);box.appendChild(li);});field.appendChild(lab);field.appendChild(box);getters.push({k:f.k,fn:function(){return Array.prototype.slice.call(box.querySelectorAll("input:checked")).map(function(x){return x.value;});}});grid.appendChild(field);return;}
+      if(f.type==="people"){
+        field.appendChild(lab);
+        if(state.employees.length===0){var n0=el("div","mod-people-empty");n0.textContent="設定で社員を登録してください";field.appendChild(n0);wrapByKey[f.k]=field;getters.push({k:f.k,fn:function(){return [];}});grid.appendChild(field);return;}
+        var sel={};((rec&&Array.isArray(rec[f.k]))?rec[f.k]:[]).forEach(function(id){sel[id]=true;});
+        var chips=el("div","msel-chips");var search=el("input","msel-search");search.type="text";search.placeholder="名前・部署で検索して選択";var listEl=el("div","msel-list");
+        function eName(id){var e=state.employees.find(function(x){return x.id===id;});return e?e.name:"";}
+        function rChips(){chips.innerHTML="";var ids=Object.keys(sel).filter(function(id){return sel[id];});if(!ids.length){var ph=el("span","msel-empty");ph.textContent="未選択";chips.appendChild(ph);return;}var cnt=el("span","msel-count");cnt.textContent=ids.length+"名選択中";chips.appendChild(cnt);ids.forEach(function(id){var c=el("span","msel-chip");c.textContent=eName(id);var x=el("button","msel-x");x.type="button";x.textContent="×";x.onclick=function(){sel[id]=false;rChips();rList();};c.appendChild(x);chips.appendChild(c);});}
+        function rList(){listEl.innerHTML="";var q=search.value.trim().toLowerCase();var shown=0;state.employees.forEach(function(e){var labl=e.name+"（"+deptName(e.deptId)+"）";if(q&&labl.toLowerCase().indexOf(q)===-1)return;shown++;var row=el("label","msel-row"+(sel[e.id]?" on":""));var cb=el("input");cb.type="checkbox";cb.checked=!!sel[e.id];cb.addEventListener("change",function(){sel[e.id]=cb.checked;row.classList.toggle("on",cb.checked);rChips();});var sp=el("span");sp.textContent=labl;row.appendChild(cb);row.appendChild(sp);listEl.appendChild(row);});if(!shown){var no=el("div","msel-none");no.textContent="該当する社員がいません";listEl.appendChild(no);}}
+        search.addEventListener("input",rList);
+        field.appendChild(chips);field.appendChild(search);field.appendChild(listEl);rChips();rList();
+        wrapByKey[f.k]=field;getters.push({k:f.k,fn:function(){return Object.keys(sel).filter(function(id){return sel[id];});}});grid.appendChild(field);return;
+      }
       if(f.type==="image"){var ibox=el("div","mod-img");imgState[f.k]=rec?(rec[f.k]||""):"";var prev=el("div","mod-img-prev");function refresh(){prev.innerHTML="";if(imgState[f.k]){var im=el("img");im.src=imgState[f.k];im.onclick=function(){modOpenImg(imgState[f.k]);};prev.appendChild(im);var rm=el("button","mini-btn");rm.type="button";rm.textContent="画像を削除";rm.onclick=function(){imgState[f.k]="";refresh();};prev.appendChild(rm);}}var file=el("input");file.type="file";file.accept="image/*";file.addEventListener("change",function(ev){var fo=ev.target.files&&ev.target.files[0];if(fo)modDownscale(fo,function(d){imgState[f.k]=d;refresh();});ev.target.value="";});field.appendChild(lab);field.appendChild(file);field.appendChild(prev);refresh();getters.push({k:f.k,fn:function(){return imgState[f.k]||"";}});grid.appendChild(field);return;}
       if(f.type==="textarea"){inp=el("textarea");if(f.ph)inp.placeholder=f.ph;if(rec)inp.value=rec[f.k]||"";}
       else if(f.type==="select"){inp=el("select");var p0=el("option");p0.value="";p0.textContent="選択してください";inp.appendChild(p0);(f.options||[]).forEach(function(op){var o=el("option");o.value=op;o.textContent=op;if(rec&&rec[f.k]===op)o.selected=true;inp.appendChild(o);});}
