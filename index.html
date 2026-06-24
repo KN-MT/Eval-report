@@ -407,6 +407,8 @@
   .data-emp-note{font-size:12px;color:var(--ink-soft);line-height:1.6;margin:0 0 11px}
   .data-emp-acts{display:flex;gap:8px;flex-wrap:wrap}
   .data-sub{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:8px}
+  .row-sub .row-mail{color:var(--ink-faint)}
+  .row-sub .row-mail::before{content:"·";margin:0 7px;color:var(--ink-faint)}
   .soon-note{background:var(--primary-tint);color:var(--primary-dark);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.6;margin-bottom:14px}
   .data-prev{display:flex;flex-direction:column;gap:8px}
   .data-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
@@ -549,6 +551,7 @@
         <div class="set-add">
           <div class="field"><label for="newEmpName">氏名</label><input type="text" id="newEmpName" placeholder="例：山田 花子"></div>
           <div class="field"><label for="newEmpDept">所属部署</label><select id="newEmpDept"></select></div>
+          <div class="field"><label for="newEmpEmail">メールアドレス</label><input type="email" id="newEmpEmail" placeholder="例：hanako@example.com"></div>
           <button class="btn btn-primary btn-sm" id="addEmp">追加</button>
         </div>
       </div>
@@ -642,7 +645,7 @@
   function toast(m){var t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove("show");},2200);}
 
   async function persistDepts(){if(remoteOn()){try{return await supaReplace(DEPT_TBL,state.departments.map(function(d,i){return {name:d.name,sort:i};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(DEPT_KEY,JSON.stringify(state.departments));}
-  async function persistEmps(){if(remoteOn()){try{return await supaReplace(EMP_TBL,state.employees.map(function(e,i){return {name:e.name,dept:deptName(e.deptId),sort:i};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(EMP_KEY,JSON.stringify(state.employees));}
+  async function persistEmps(){if(remoteOn()){try{return await supaReplace(EMP_TBL,state.employees.map(function(e,i){return {name:e.name,dept:deptName(e.deptId),email:e.email||null,sort:i};}));}catch(e){toast("保存に失敗しました（接続を確認）");return;}}await sset(EMP_KEY,JSON.stringify(state.employees));}
   async function persistReports(){if(remoteOn()){try{return await supaReplace(KOMATTE_TBL,state.reports.map(komatteToDb));}catch(e){toast("保存に失敗しました（接続を確認）");throw e;}}return await sset(DATA_KEY,JSON.stringify(state.reports));}
 
   function deptName(id){var d=state.departments.find(function(x){return x.id===id;});return d?d.name:"";}
@@ -1006,18 +1009,21 @@
       var row=el("div","set-row");
       if(editingEmpId===e.id){
         var ef=el("div","edit-fields");
-        var inp=el("input");inp.type="text";inp.value=e.name;
+        var inp=el("input");inp.type="text";inp.value=e.name;inp.placeholder="氏名";
         var sel=el("select");fillDeptSelectEmpty(sel,e.deptId);
+        var inpEmail=el("input");inpEmail.type="email";inpEmail.value=e.email||"";inpEmail.placeholder="メールアドレス";
         var save=el("button","mini-btn primary");save.type="button";save.textContent="保存";
         var cancel=el("button","mini-btn");cancel.type="button";cancel.textContent="取消";
-        save.onclick=function(){var v=inp.value.trim();if(!v){toast("氏名を入力してください");return;}e.name=v;e.deptId=sel.value;editingEmpId=null;persistEmps();refreshAll();renderEmpSettings();renderDeptSettings();};
+        save.onclick=function(){var v=inp.value.trim();if(!v){toast("氏名を入力してください");return;}e.name=v;e.deptId=sel.value;e.email=inpEmail.value.trim();editingEmpId=null;persistEmps();refreshAll();renderEmpSettings();renderDeptSettings();};
         cancel.onclick=function(){editingEmpId=null;renderEmpSettings();};
         inp.addEventListener("keydown",function(ev){if(ev.key==="Enter")save.onclick();});
-        ef.appendChild(inp);ef.appendChild(sel);ef.appendChild(save);ef.appendChild(cancel);row.appendChild(ef);
+        inpEmail.addEventListener("keydown",function(ev){if(ev.key==="Enter")save.onclick();});
+        ef.appendChild(inp);ef.appendChild(sel);ef.appendChild(inpEmail);ef.appendChild(save);ef.appendChild(cancel);row.appendChild(ef);
       }else{
         var grip=el("div","grip");grip.innerHTML="&#10303;";grip.title="ドラッグで並び替え";row.appendChild(grip);
         var main=el("div","row-main");var dn2=deptName(e.deptId);
-        main.innerHTML='<div class="row-name">'+esc(e.name)+'</div><div class="row-sub">'+(dn2?esc(dn2):"部署未設定")+'</div>';
+        var subtxt=(dn2?esc(dn2):"部署未設定")+(e.email?'<span class="row-mail">'+esc(e.email)+'</span>':"");
+        main.innerHTML='<div class="row-name">'+esc(e.name)+'</div><div class="row-sub">'+subtxt+'</div>';
         row.appendChild(main);
         var act=el("div","row-actions");
         var edit=el("button","mini-btn");edit.type="button";edit.textContent="編集";edit.onclick=function(){editingEmpId=e.id;editingDeptId=null;renderEmpSettings();};
@@ -1034,10 +1040,10 @@
     sel.value=selectedId||"";
   }
   async function addEmp(){
-    var name=$("#newEmpName").value.trim(),deptId=$("#newEmpDept").value;
+    var name=$("#newEmpName").value.trim(),deptId=$("#newEmpDept").value,email=$("#newEmpEmail").value.trim();
     if(!name){toast("氏名を入力してください");return;}
-    state.employees.push({id:uid(),name:name,deptId:deptId});
-    $("#newEmpName").value="";
+    state.employees.push({id:uid(),name:name,deptId:deptId,email:email});
+    $("#newEmpName").value="";$("#newEmpEmail").value="";
     await persistEmps();refreshAll();renderEmpSettings();renderDeptSettings();toast("社員を追加しました");
   }
   async function removeEmp(id){
@@ -1370,8 +1376,8 @@
   function empTemplateExport(){
     if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}
     var dn=state.departments[0]?state.departments[0].name:"営業部";
-    var rows=[{"氏名":"山田 花子","部署":dn},{"氏名":"佐藤 太郎","部署":dn}];
-    var ws=XLSX.utils.json_to_sheet(rows,{header:["氏名","部署"]});ws["!cols"]=[{wch:20},{wch:18}];
+    var rows=[{"氏名":"山田 花子","部署":dn,"メールアドレス":"hanako@example.com"},{"氏名":"佐藤 太郎","部署":dn,"メールアドレス":"taro@example.com"}];
+    var ws=XLSX.utils.json_to_sheet(rows,{header:["氏名","部署","メールアドレス"]});ws["!cols"]=[{wch:20},{wch:18},{wch:26}];
     var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"社員");
     XLSX.writeFile(wb,"考課表_社員テンプレート.xlsx");toast("テンプレートをダウンロードしました");
   }
@@ -1387,7 +1393,8 @@
           var nm=String(row["氏名"]||row["名前"]||"").trim();if(!nm)return;
           var dn=String(row["部署"]||"").trim();var deptId="";
           if(dn){var d=state.departments.find(function(x){return x.name===dn;});if(!d){d={id:uid(),name:dn};state.departments.push(d);addedDept++;}deptId=d.id;}
-          state.employees.push({id:uid(),name:nm,deptId:deptId});addedEmp++;
+          var em=String(row["メールアドレス"]||row["メール"]||row["email"]||row["Email"]||"").trim();
+          state.employees.push({id:uid(),name:nm,deptId:deptId,email:em});addedEmp++;
         });
         if(!addedEmp){toast("有効な社員データが見つかりませんでした（「氏名」列をご確認ください）");return;}
         if(addedDept)await persistDepts();
@@ -1503,7 +1510,7 @@
     if(mn&&mn.value){try{(JSON.parse(mn.value)||[]).forEach(function(o){var t=state.menu.find(function(m){return m.key===o.key;});if(t){if(o.name)t.name=o.name;if(o.desc!=null)t.desc=o.desc;}});}catch(e){}}
     if(remoteOn()){
       try{var _d=await supaSelect(DEPT_TBL,"sort.asc");state.departments=_d.map(function(x){return {id:uid(),name:String(x.name||"").trim()};}).filter(function(d){return d.name;});}catch(e){state.departments=[];toast("接続に失敗しました。URL・公開キーをご確認ください");}
-      try{var _e=await supaSelect(EMP_TBL,"sort.asc");state.employees=_e.map(function(x){var dn=String(x.dept||"").trim();var dp=state.departments.find(function(d){return d.name===dn;});return {id:uid(),name:String(x.name||"").trim(),deptId:dp?dp.id:""};}).filter(function(e){return e.name;});}catch(e){state.employees=[];}
+      try{var _e=await supaSelect(EMP_TBL,"sort.asc");state.employees=_e.map(function(x){var dn=String(x.dept||"").trim();var dp=state.departments.find(function(d){return d.name===dn;});return {id:uid(),name:String(x.name||"").trim(),deptId:dp?dp.id:"",email:String(x.email||"").trim()};}).filter(function(e){return e.name;});}catch(e){state.employees=[];}
       try{var _r=await supaSelect(KOMATTE_TBL,"report_date.asc");state.reports=_r.map(komatteFromDb);}catch(e){state.reports=[];}
     } else {
     // departments (migrate string[] -> object[])
