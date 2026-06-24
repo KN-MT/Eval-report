@@ -1406,11 +1406,11 @@
         var mk=(rec.reportDate||"").slice(0,7);if(!inR(mk))return;
         var pid=empIdOfPerson(rec);
         if(k==="study"){
-          var ids={};if(pid)ids[pid]=1;(rec.participants||[]).forEach(function(id){if(id)ids[id]=1;});
-          Object.keys(ids).forEach(function(id){add("study",id,mk);});
+          if(pid)add("study_plan",pid,mk);
+          var s1={};(rec.participants||[]).forEach(function(id){if(id&&!s1[id]){s1[id]=1;add("study_part",id,mk);}});
         }else if(k==="thanks"){
-          var ids2={};if(pid)ids2[pid]=1;(rec.thankedPeople||[]).forEach(function(id){if(id)ids2[id]=1;});
-          Object.keys(ids2).forEach(function(id){add("thanks",id,mk);});
+          if(pid)add("thanks_rep",pid,mk);
+          var s2={};(rec.thankedPeople||[]).forEach(function(id){if(id&&!s2[id]){s2[id]=1;add("thanks_recv",id,mk);}});
         }else if(k==="reading"){
           if(pid)add((rec.kind==="資格")?"reading_cert":"reading_book",pid,mk);
         }else{
@@ -1451,14 +1451,11 @@
       var block=el("div","shukei-cat");
       var h=el("div","shukei-cat-h");h.textContent=c.label;h.style.borderLeftColor=ac;h.style.color=ac;
       block.appendChild(h);
-      if(c.key==="reading"){
-        var l1=el("div","shukei-sub");l1.textContent="読書";block.appendChild(l1);
-        block.appendChild(shukeiTable(emps,monthCols,mc["reading_book"]||{},ac));
-        var l2=el("div","shukei-sub");l2.textContent="資格";l2.style.marginTop="14px";block.appendChild(l2);
-        block.appendChild(shukeiTable(emps,monthCols,mc["reading_cert"]||{},ac));
-      }else{
-        block.appendChild(shukeiTable(emps,monthCols,mc[c.key]||{},ac));
-      }
+      function sub(label,data,mt){var l=el("div","shukei-sub");l.textContent=label;if(mt)l.style.marginTop="14px";block.appendChild(l);block.appendChild(shukeiTable(emps,monthCols,data||{},ac));}
+      if(c.key==="study"){sub("企画者",mc["study_plan"]);sub("参加者",mc["study_part"],true);}
+      else if(c.key==="thanks"){sub("報告者",mc["thanks_rep"]);sub("感謝を受けた人",mc["thanks_recv"],true);}
+      else if(c.key==="reading"){sub("読書",mc["reading_book"]);sub("資格",mc["reading_cert"],true);}
+      else{block.appendChild(shukeiTable(emps,monthCols,mc[c.key]||{},ac));}
       body.appendChild(block);
     });
   }
