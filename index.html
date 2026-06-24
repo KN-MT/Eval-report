@@ -1490,9 +1490,10 @@
       var row=el("div","data-row");
       var nm=el("span","data-name");nm.textContent=m.name;
       var acts=el("span","data-acts");
+      var tp=el("button","btn btn-ghost btn-sm");tp.type="button";tp.textContent="テンプレート";tp.disabled=true;
       var ex=el("button","btn btn-ghost btn-sm");ex.type="button";ex.textContent="エクスポート";ex.disabled=true;
       var im=el("button","btn btn-ghost btn-sm");im.type="button";im.textContent="インポート";im.disabled=true;
-      acts.appendChild(ex);acts.appendChild(im);row.appendChild(nm);row.appendChild(acts);box.appendChild(row);
+      acts.appendChild(tp);acts.appendChild(ex);acts.appendChild(im);row.appendChild(nm);row.appendChild(acts);box.appendChild(row);
     });
   }
   function empTemplateExport(){
