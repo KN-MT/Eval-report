@@ -402,6 +402,11 @@
   .set-tab:hover{color:var(--ink)}
   .set-tab.on{color:var(--primary)}
   .set-tab.on::after{content:"";position:absolute;left:8px;right:8px;bottom:-2px;height:2px;background:var(--primary);border-radius:2px}
+  .data-emp{border:1px solid var(--line);border-radius:12px;padding:14px 15px;background:var(--surface);margin-bottom:18px}
+  .data-emp-head{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:6px}
+  .data-emp-note{font-size:12px;color:var(--ink-soft);line-height:1.6;margin:0 0 11px}
+  .data-emp-acts{display:flex;gap:8px;flex-wrap:wrap}
+  .data-sub{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:8px}
   .soon-note{background:var(--primary-tint);color:var(--primary-dark);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.6;margin-bottom:14px}
   .data-prev{display:flex;flex-direction:column;gap:8px}
   .data-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
@@ -550,18 +555,20 @@
     </section>
 
     <section class="panel set-page" id="setData" hidden>
-      <div class="panel-head"><span class="mark"></span><h2>データ管理</h2><span class="note">Excel 入出力（今後追加）</span></div>
+      <div class="panel-head"><span class="mark"></span><h2>データ管理</h2><span class="note">Excel 入出力</span></div>
       <div class="panel-body">
-        <div class="soon-note">各項目のデータを Excel ファイルでインポート・エクスポートできる機能を今後追加する予定です。（現在は表示のみ）</div>
-        <div class="data-prev">
-          <div class="data-row"><span class="data-name">困っている</span><span class="data-acts"><button class="btn btn-ghost btn-sm" type="button" disabled>エクスポート</button><button class="btn btn-ghost btn-sm" type="button" disabled>インポート</button></span></div>
-          <div class="data-row"><span class="data-name">改善改良</span><span class="data-acts"><button class="btn btn-ghost btn-sm" type="button" disabled>エクスポート</button><button class="btn btn-ghost btn-sm" type="button" disabled>インポート</button></span></div>
-          <div class="data-row"><span class="data-name">勉強会・研修会</span><span class="data-acts"><button class="btn btn-ghost btn-sm" type="button" disabled>エクスポート</button><button class="btn btn-ghost btn-sm" type="button" disabled>インポート</button></span></div>
-          <div class="data-row"><span class="data-name">失敗事例</span><span class="data-acts"><button class="btn btn-ghost btn-sm" type="button" disabled>エクスポート</button><button class="btn btn-ghost btn-sm" type="button" disabled>インポート</button></span></div>
-          <div class="data-row"><span class="data-name">感謝の言葉</span><span class="data-acts"><button class="btn btn-ghost btn-sm" type="button" disabled>エクスポート</button><button class="btn btn-ghost btn-sm" type="button" disabled>インポート</button></span></div>
-          <div class="data-row"><span class="data-name">読書・資格</span><span class="data-acts"><button class="btn btn-ghost btn-sm" type="button" disabled>エクスポート</button><button class="btn btn-ghost btn-sm" type="button" disabled>インポート</button></span></div>
-          <div class="data-row"><span class="data-name">社員成長支援</span><span class="data-acts"><button class="btn btn-ghost btn-sm" type="button" disabled>エクスポート</button><button class="btn btn-ghost btn-sm" type="button" disabled>インポート</button></span></div>
+        <div class="data-emp">
+          <div class="data-emp-head">社員の一括登録（Excel）</div>
+          <p class="data-emp-note">「氏名」「部署」の列を持つExcelを取り込むと、社員をまとめて登録できます。まずテンプレートをダウンロードしてご利用ください。表にない部署は自動で追加します。</p>
+          <div class="data-emp-acts">
+            <button class="btn btn-ghost btn-sm" type="button" id="empTplBtn">⬇　テンプレート</button>
+            <button class="btn btn-primary btn-sm" type="button" id="empImpBtn">⬆　Excelから取り込み</button>
+            <input type="file" id="empImpFile" accept=".xlsx,.xls" hidden>
+          </div>
         </div>
+        <div class="data-sub">各報告データのExcel入出力</div>
+        <div class="soon-note">下記は各項目（報告）のデータをExcelで入出力する機能で、今後追加予定です。（現在は表示のみ）</div>
+        <div class="data-prev" id="dataReportList"></div>
       </div>
     </section>
   </div>
@@ -1347,6 +1354,48 @@
   function switchSetTab(cat){
     $("#setHome").hidden=(cat!=="home");$("#setDept").hidden=(cat!=="dept");$("#setEmp").hidden=(cat!=="emp");$("#setData").hidden=(cat!=="data");
     Array.prototype.forEach.call(document.querySelectorAll("#setTabs .set-tab"),function(b){b.classList.toggle("on",b.dataset.cat===cat);});
+    if(cat==="data")renderDataList();
+  }
+  function renderDataList(){
+    var box=$("#dataReportList");if(!box)return;box.innerHTML="";
+    state.menu.forEach(function(m){
+      var row=el("div","data-row");
+      var nm=el("span","data-name");nm.textContent=m.name;
+      var acts=el("span","data-acts");
+      var ex=el("button","btn btn-ghost btn-sm");ex.type="button";ex.textContent="エクスポート";ex.disabled=true;
+      var im=el("button","btn btn-ghost btn-sm");im.type="button";im.textContent="インポート";im.disabled=true;
+      acts.appendChild(ex);acts.appendChild(im);row.appendChild(nm);row.appendChild(acts);box.appendChild(row);
+    });
+  }
+  function empTemplateExport(){
+    if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}
+    var dn=state.departments[0]?state.departments[0].name:"営業部";
+    var rows=[{"氏名":"山田 花子","部署":dn},{"氏名":"佐藤 太郎","部署":dn}];
+    var ws=XLSX.utils.json_to_sheet(rows,{header:["氏名","部署"]});ws["!cols"]=[{wch:20},{wch:18}];
+    var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"社員");
+    XLSX.writeFile(wb,"考課表_社員テンプレート.xlsx");toast("テンプレートをダウンロードしました");
+  }
+  function empBulkImport(file){
+    if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}
+    var reader=new FileReader();
+    reader.onload=async function(e){
+      try{
+        var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+        var ws=wb.Sheets[wb.SheetNames[0]];var rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+        var addedDept=0,addedEmp=0;
+        rows.forEach(function(row){
+          var nm=String(row["氏名"]||row["名前"]||"").trim();if(!nm)return;
+          var dn=String(row["部署"]||"").trim();var deptId="";
+          if(dn){var d=state.departments.find(function(x){return x.name===dn;});if(!d){d={id:uid(),name:dn};state.departments.push(d);addedDept++;}deptId=d.id;}
+          state.employees.push({id:uid(),name:nm,deptId:deptId});addedEmp++;
+        });
+        if(!addedEmp){toast("有効な社員データが見つかりませんでした（「氏名」列をご確認ください）");return;}
+        if(addedDept)await persistDepts();
+        await persistEmps();refreshAll();renderEmpSettings();renderDeptSettings();
+        toast(addedEmp+"名を登録しました"+(addedDept?("／部署"+addedDept+"件を追加"):""));
+      }catch(err){toast("読み込みに失敗しました。ファイル形式をご確認ください");}
+    };
+    reader.readAsArrayBuffer(file);
   }
 
   /* ---- events ---- */
@@ -1421,6 +1470,9 @@
     $("#searchInput").addEventListener("input",function(ev){state.search=ev.target.value.trim();renderList();});
     $("#prevMonthChk").addEventListener("change",function(ev){state.prevOnly=ev.target.checked;ev.target.parentNode.classList.toggle("on",ev.target.checked);renderList();});
     $("#setTabs").addEventListener("click",function(ev){var b=ev.target.closest(".set-tab");if(!b)return;switchSetTab(b.dataset.cat);});
+    var _et=$("#empTplBtn");if(_et)_et.addEventListener("click",empTemplateExport);
+    var _ei=$("#empImpBtn");if(_ei)_ei.addEventListener("click",function(){$("#empImpFile").click();});
+    var _ef=$("#empImpFile");if(_ef)_ef.addEventListener("change",function(ev){var fl=ev.target.files&&ev.target.files[0];if(fl)empBulkImport(fl);ev.target.value="";});
     $("#ioGear").addEventListener("click",function(ev){ev.stopPropagation();var m=$("#ioMenu");m.hidden=!m.hidden;});
     $("#ioExport").addEventListener("click",function(){closeIoMenu();exportXlsx();});
     $("#ioImport").addEventListener("click",function(){closeIoMenu();$("#ioFile").click();});
