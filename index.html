@@ -415,12 +415,28 @@
   .data-name{font-size:13.5px;font-weight:600;color:var(--ink)}
   .data-acts{display:flex;gap:8px;flex:none}
   .data-acts .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .shukei-sum{font-size:13px;color:var(--ink-soft);margin:4px 2px 14px}
+  .shukei-h{font-size:14px;font-weight:800;color:var(--ink);margin:22px 2px 10px}
+  .shukei-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  .shukei-table{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+  .shukei-table th,.shukei-table td{padding:8px 10px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line)}
+  .shukei-table thead th{background:var(--paper);color:var(--ink-soft);font-size:11.5px;font-weight:700;position:sticky;top:0}
+  .shukei-table th.name,.shukei-table td.name{text-align:left;position:sticky;left:0;background:var(--surface);min-width:128px}
+  .shukei-table thead th.name{z-index:2;background:var(--paper)}
+  .shukei-table td.name{z-index:1}
+  .shukei-table td.name b{display:block;font-size:13px;color:var(--ink)}
+  .shukei-table td.name .sub{font-size:11px;color:var(--ink-faint)}
+  .shukei-table td.zero{color:var(--ink-faint)}
+  .shukei-table .total{font-weight:800;color:var(--primary);background:var(--primary-tint)}
+  .shukei-table thead th.total{color:var(--primary-dark)}
+  .shukei-table tfoot td,.shukei-table tfoot th{font-weight:800;background:var(--paper);border-top:2px solid var(--line)}
 </style>
 
 <div class="wrap">
   <!-- 考課表報告（ホーム） -->
   <div id="homeView">
     <div class="home-topbar">
+      <button class="settings-link" id="openShukei" title="集計"><span class="settings-ico">📊</span>集計</button>
       <button class="settings-link" id="openSettings" title="管理者設定" aria-label="管理者設定"><span class="settings-ico">⚙</span>設定</button>
     </div>
     <header class="menu-hero">
@@ -574,6 +590,29 @@
         <div class="data-prev" id="dataReportList"></div>
       </div>
     </section>
+  </div>
+
+  <div id="shukeiView" hidden>
+    <button class="ghost-pill view-back" id="backFromShukei">← 考課表報告に戻る</button>
+    <header class="view-head">
+      <div class="title-group">
+        <span class="eyebrow">集計</span>
+        <h1>報告件数の集計</h1>
+        <span class="subtitle">社員ごとの月別件数と、期間・項目別の合計を表示します</span>
+      </div>
+    </header>
+    <section class="panel">
+      <div class="panel-body">
+        <div class="grid">
+          <div class="field"><label for="shukeiFrom">期間（始）</label><input type="month" id="shukeiFrom"></div>
+          <div class="field"><label for="shukeiTo">期間（終）</label><input type="month" id="shukeiTo"></div>
+          <div class="field"><label for="shukeiName">社員名で絞り込み</label><input type="text" id="shukeiName" placeholder="名前で検索"></div>
+          <div class="field"><label for="shukeiDept">部署で絞り込み</label><select id="shukeiDept"></select></div>
+        </div>
+        <div class="form-actions"><button type="button" class="btn btn-ghost btn-sm" id="shukeiFY">今年度（4月〜翌3月）に戻す</button></div>
+      </div>
+    </section>
+    <div id="shukeiBody"></div>
   </div>
 </div>
 
@@ -1346,7 +1385,65 @@
   }
 
   /* ---- view toggle (home / komatte / settings) ---- */
-  function hideAllViews(){$("#homeView").hidden=true;$("#komatteView").hidden=true;$("#settingsView").hidden=true;var mv=$("#moduleView");if(mv)mv.hidden=true;document.body.style.background="";}
+  /* ===== 集計 ===== */
+  function fiscalRange(){var d=new Date();var y=d.getFullYear();var m=d.getMonth()+1;var sy=(m>=4)?y:y-1;return {from:sy+"-04",to:(sy+1)+"-03"};}
+  function monthList(from,to){var out=[];if(!from||!to||from>to)return out;var y=+from.slice(0,4),m=+from.slice(5,7),ty=+to.slice(0,4),tm=+to.slice(5,7),g=0;while((y<ty||(y===ty&&m<=tm))&&g<600){out.push(y+"-"+(m<10?"0"+m:m));m++;if(m>12){m=1;y++;}g++;}return out;}
+  function empIdOfPerson(rec){var id=rec.person||"";if(id&&state.employees.some(function(e){return e.id===id;}))return id;return empIdByName(rec.person_snap||"");}
+  function shukeiCatCols(){var cols=[];state.menu.forEach(function(m){if(m.key==="reading"){cols.push({key:"reading_book",label:"読書"});cols.push({key:"reading_cert",label:"資格"});}else{cols.push({key:m.key,label:m.name});}});return cols;}
+  function shukeiAggregate(from,to){
+    var month={},cat={};
+    function inR(mk){return mk&&mk>=from&&mk<=to;}
+    function add(id,mk,ck){if(!id)return;if(!month[id])month[id]={};month[id][mk]=(month[id][mk]||0)+1;if(!cat[id])cat[id]={};cat[id][ck]=(cat[id][ck]||0)+1;}
+    (state.reports||[]).forEach(function(r){var mk=(r.reportDate||"").slice(0,7);if(!inR(mk))return;add(r.proposerId||empIdByName(r.proposerName||""),mk,"komatte");});
+    ["kaizen","study","failure","reading","thanks","growth"].forEach(function(k){
+      (MOD_DATA[k]||[]).forEach(function(rec){
+        var mk=(rec.reportDate||"").slice(0,7);if(!inR(mk))return;
+        var ck=k;if(k==="reading")ck=(rec.kind==="資格")?"reading_cert":"reading_book";
+        var ids={};var pid=empIdOfPerson(rec);if(pid)ids[pid]=1;
+        if(k==="study")(rec.participants||[]).forEach(function(id){if(id)ids[id]=1;});
+        if(k==="thanks")(rec.thankedPeople||[]).forEach(function(id){if(id)ids[id]=1;});
+        Object.keys(ids).forEach(function(id){add(id,mk,ck);});
+      });
+    });
+    return {month:month,cat:cat};
+  }
+  function shukeiFilteredEmps(){var q=($("#shukeiName").value||"").trim().toLowerCase();var dq=$("#shukeiDept").value||"";return state.employees.filter(function(e){if(dq&&deptName(e.deptId)!==dq)return false;if(q&&e.name.toLowerCase().indexOf(q)===-1)return false;return true;});}
+  function loadAllForShukei(){return Promise.all(["kaizen","study","failure","reading","thanks","growth"].map(function(k){return loadMod(k);}));}
+  function thEl(txt,cls){var th=el("th",cls||"");th.textContent=txt;return th;}
+  function shukeiTable(emps,cols,data,labelFn){
+    var wrap=el("div","shukei-tablewrap");var tbl=el("table","shukei-table");
+    var thead=el("thead");var hr=el("tr");hr.appendChild(thEl("社員","name"));cols.forEach(function(c){hr.appendChild(thEl(c.label));});hr.appendChild(thEl("合計","total"));thead.appendChild(hr);tbl.appendChild(thead);
+    var tb=el("tbody");var colTot={};var grand=0;
+    emps.forEach(function(e){
+      var tr=el("tr");var nt=el("td","name");nt.innerHTML='<b>'+esc(e.name)+'</b><span class="sub">'+esc(deptName(e.deptId)||"—")+'</span>';tr.appendChild(nt);
+      var d=data[e.id]||{};var rowTot=0;
+      cols.forEach(function(c){var v=d[c.key]||0;rowTot+=v;colTot[c.key]=(colTot[c.key]||0)+v;var td=el("td");td.textContent=v||"";if(!v)td.className="zero";tr.appendChild(td);});
+      grand+=rowTot;var tt=el("td","total");tt.textContent=rowTot;tr.appendChild(tt);tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    var tf=el("tfoot");var fr=el("tr");fr.appendChild(thEl("合計","name"));cols.forEach(function(c){var td=el("td");td.textContent=colTot[c.key]||0;fr.appendChild(td);});var gt=el("td","total");gt.textContent=grand;fr.appendChild(gt);tf.appendChild(fr);tbl.appendChild(tf);
+    wrap.appendChild(tbl);return wrap;
+  }
+  function renderShukei(){
+    var from=$("#shukeiFrom").value,to=$("#shukeiTo").value;var body=$("#shukeiBody");body.innerHTML="";
+    if(!from||!to||from>to){body.innerHTML='<div class="empty">期間を正しく選択してください（始 ≤ 終）。</div>';return;}
+    var months=monthList(from,to);var agg=shukeiAggregate(from,to);var emps=shukeiFilteredEmps();
+    var sum=el("div","shukei-sum");sum.textContent="期間："+from.replace("-","年")+"月 〜 "+to.replace("-","年")+"月　／　対象社員 "+emps.length+"名";body.appendChild(sum);
+    var h1=el("div","shukei-h");h1.textContent="社員別・月別件数";body.appendChild(h1);
+    var monthCols=months.map(function(mk){return {key:mk,label:(+mk.slice(5,7))+"月"};});
+    body.appendChild(shukeiTable(emps,monthCols,agg.month));
+    var h2=el("div","shukei-h");h2.textContent="社員別・項目別件数";body.appendChild(h2);
+    body.appendChild(shukeiTable(emps,shukeiCatCols(),agg.cat));
+  }
+  async function showShukei(){
+    hideAllViews();$("#shukeiView").hidden=false;
+    var sd=$("#shukeiDept");if(sd){sd.innerHTML="";var o0=el("option");o0.value="";o0.textContent="全部署";sd.appendChild(o0);state.departments.forEach(function(d){var o=el("option");o.value=d.name;o.textContent=d.name;sd.appendChild(o);});}
+    if(!$("#shukeiFrom").value||!$("#shukeiTo").value){var fr=fiscalRange();$("#shukeiFrom").value=fr.from;$("#shukeiTo").value=fr.to;}
+    $("#shukeiBody").innerHTML='<div class="empty">読み込み中…</div>';window.scrollTo({top:0,behavior:"smooth"});
+    try{await loadAllForShukei();}catch(e){}
+    renderShukei();
+  }
+  function hideAllViews(){$("#homeView").hidden=true;$("#komatteView").hidden=true;$("#settingsView").hidden=true;var mv=$("#moduleView");if(mv)mv.hidden=true;var sv=$("#shukeiView");if(sv)sv.hidden=true;document.body.style.background="";}
   function showHome(){hideAllViews();$("#homeView").hidden=false;renderMenu();window.scrollTo({top:0,behavior:"smooth"});}
   function showKomatte(){hideAllViews();$("#komatteView").hidden=false;resetCreateForm();setReportForm(false);renderList();window.scrollTo({top:0,behavior:"smooth"});}
   function showSettings(){
@@ -1494,6 +1591,12 @@
 
     $("#openSettings").addEventListener("click",showSettings);
     $("#backToMain").addEventListener("click",showHome);
+    var _osb=$("#openShukei");if(_osb)_osb.addEventListener("click",showShukei);
+    var _bfs=$("#backFromShukei");if(_bfs)_bfs.addEventListener("click",showHome);
+    ["shukeiFrom","shukeiTo"].forEach(function(id){var x=$("#"+id);if(x)x.addEventListener("change",renderShukei);});
+    var _snm=$("#shukeiName");if(_snm)_snm.addEventListener("input",renderShukei);
+    var _sdp=$("#shukeiDept");if(_sdp)_sdp.addEventListener("change",renderShukei);
+    var _sfy=$("#shukeiFY");if(_sfy)_sfy.addEventListener("click",function(){var fr=fiscalRange();$("#shukeiFrom").value=fr.from;$("#shukeiTo").value=fr.to;renderShukei();});
     $("#komatteBack").addEventListener("click",showHome);
     $("#addDept").addEventListener("click",addDept);
     $("#newDept").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();addDept();}});
