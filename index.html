@@ -1393,8 +1393,12 @@
   function fiscalRange(){var d=new Date();var y=d.getFullYear();var m=d.getMonth()+1;var sy=(m>=4)?y:y-1;return {from:sy+"-04",to:(sy+1)+"-03"};}
   function monthList(from,to){var out=[];if(!from||!to||from>to)return out;var y=+from.slice(0,4),m=+from.slice(5,7),ty=+to.slice(0,4),tm=+to.slice(5,7),g=0;while((y<ty||(y===ty&&m<=tm))&&g<600){out.push(y+"-"+(m<10?"0"+m:m));m++;if(m>12){m=1;y++;}g++;}return out;}
   function empIdOfPerson(rec){var id=rec.person||"";if(id&&state.employees.some(function(e){return e.id===id;}))return id;return empIdByName(rec.person_snap||"");}
-  function shukeiCatCols(){var cols=[];state.menu.forEach(function(m){if(m.key==="reading"){cols.push({key:"reading_book",label:"読書"});cols.push({key:"reading_cert",label:"資格"});}else{cols.push({key:m.key,label:m.name});}});return cols;}
-  function shukeiCatColor(key){if(key==="reading_book")return "#1E807D";if(key==="reading_cert")return "#B36A22";var m=state.menu.find(function(x){return x.key===key;});return (m&&m.accent)?m.accent:"#1F5FB0";}
+  function shukeiCatCols(){var cols=[];state.menu.forEach(function(m){
+    if(m.key==="study"){cols.push({key:"study_plan",label:m.name+"（企画者）"});cols.push({key:"study_part",label:m.name+"（参加者）"});}
+    else if(m.key==="thanks"){cols.push({key:"thanks_rep",label:m.name+"（報告者）"});cols.push({key:"thanks_recv",label:m.name+"（感謝を受けた人）"});}
+    else{cols.push({key:m.key,label:m.name});}
+  });return cols;}
+  function shukeiCatColor(key){var base=key;if(key==="study_plan"||key==="study_part")base="study";else if(key==="thanks_rep"||key==="thanks_recv")base="thanks";var m=state.menu.find(function(x){return x.key===base;});return (m&&m.accent)?m.accent:"#1F5FB0";}
   function shukeiAggregate(from,to){
     var mc={};
     function inR(mk){return mk&&mk>=from&&mk<=to;}
@@ -1403,11 +1407,16 @@
     ["kaizen","study","failure","reading","thanks","growth"].forEach(function(k){
       (MOD_DATA[k]||[]).forEach(function(rec){
         var mk=(rec.reportDate||"").slice(0,7);if(!inR(mk))return;
-        var ck=k;if(k==="reading")ck=(rec.kind==="資格")?"reading_cert":"reading_book";
-        var ids={};var pid=empIdOfPerson(rec);if(pid)ids[pid]=1;
-        if(k==="study")(rec.participants||[]).forEach(function(id){if(id)ids[id]=1;});
-        if(k==="thanks")(rec.thankedPeople||[]).forEach(function(id){if(id)ids[id]=1;});
-        Object.keys(ids).forEach(function(id){add(ck,id,mk);});
+        var pid=empIdOfPerson(rec);
+        if(k==="study"){
+          if(pid)add("study_plan",pid,mk);
+          var s1={};(rec.participants||[]).forEach(function(id){if(id&&!s1[id]){s1[id]=1;add("study_part",id,mk);}});
+        }else if(k==="thanks"){
+          if(pid)add("thanks_rep",pid,mk);
+          var s2={};(rec.thankedPeople||[]).forEach(function(id){if(id&&!s2[id]){s2[id]=1;add("thanks_recv",id,mk);}});
+        }else{
+          if(pid)add(k,pid,mk);
+        }
       });
     });
     return mc;
