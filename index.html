@@ -420,6 +420,7 @@
   .shukei-cat{margin-top:26px}
   .shukei-cat:first-of-type{margin-top:8px}
   .shukei-cat-h{font-size:15px;font-weight:800;padding:3px 0 3px 12px;border-left:5px solid var(--primary);line-height:1.25;margin-bottom:9px}
+  .shukei-sub{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:0 2px 6px}
   .shukei-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
   .shukei-table{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
   .shukei-table th,.shukei-table td{padding:8px 10px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line)}
@@ -1393,12 +1394,8 @@
   function fiscalRange(){var d=new Date();var y=d.getFullYear();var m=d.getMonth()+1;var sy=(m>=4)?y:y-1;return {from:sy+"-04",to:(sy+1)+"-03"};}
   function monthList(from,to){var out=[];if(!from||!to||from>to)return out;var y=+from.slice(0,4),m=+from.slice(5,7),ty=+to.slice(0,4),tm=+to.slice(5,7),g=0;while((y<ty||(y===ty&&m<=tm))&&g<600){out.push(y+"-"+(m<10?"0"+m:m));m++;if(m>12){m=1;y++;}g++;}return out;}
   function empIdOfPerson(rec){var id=rec.person||"";if(id&&state.employees.some(function(e){return e.id===id;}))return id;return empIdByName(rec.person_snap||"");}
-  function shukeiCatCols(){var cols=[];state.menu.forEach(function(m){
-    if(m.key==="study"){cols.push({key:"study_plan",label:m.name+"（企画者）"});cols.push({key:"study_part",label:m.name+"（参加者）"});}
-    else if(m.key==="thanks"){cols.push({key:"thanks_rep",label:m.name+"（報告者）"});cols.push({key:"thanks_recv",label:m.name+"（感謝を受けた人）"});}
-    else{cols.push({key:m.key,label:m.name});}
-  });return cols;}
-  function shukeiCatColor(key){var base=key;if(key==="study_plan"||key==="study_part")base="study";else if(key==="thanks_rep"||key==="thanks_recv")base="thanks";var m=state.menu.find(function(x){return x.key===base;});return (m&&m.accent)?m.accent:"#1F5FB0";}
+  function shukeiCatCols(){var cols=[];state.menu.forEach(function(m){cols.push({key:m.key,label:m.name});});return cols;}
+  function shukeiCatColor(key){var m=state.menu.find(function(x){return x.key===key;});return (m&&m.accent)?m.accent:"#1F5FB0";}
   function shukeiAggregate(from,to){
     var mc={};
     function inR(mk){return mk&&mk>=from&&mk<=to;}
@@ -1409,11 +1406,13 @@
         var mk=(rec.reportDate||"").slice(0,7);if(!inR(mk))return;
         var pid=empIdOfPerson(rec);
         if(k==="study"){
-          if(pid)add("study_plan",pid,mk);
-          var s1={};(rec.participants||[]).forEach(function(id){if(id&&!s1[id]){s1[id]=1;add("study_part",id,mk);}});
+          var ids={};if(pid)ids[pid]=1;(rec.participants||[]).forEach(function(id){if(id)ids[id]=1;});
+          Object.keys(ids).forEach(function(id){add("study",id,mk);});
         }else if(k==="thanks"){
-          if(pid)add("thanks_rep",pid,mk);
-          var s2={};(rec.thankedPeople||[]).forEach(function(id){if(id&&!s2[id]){s2[id]=1;add("thanks_recv",id,mk);}});
+          var ids2={};if(pid)ids2[pid]=1;(rec.thankedPeople||[]).forEach(function(id){if(id)ids2[id]=1;});
+          Object.keys(ids2).forEach(function(id){add("thanks",id,mk);});
+        }else if(k==="reading"){
+          if(pid)add((rec.kind==="資格")?"reading_cert":"reading_book",pid,mk);
         }else{
           if(pid)add(k,pid,mk);
         }
@@ -1448,10 +1447,18 @@
     var cols=shukeiCatCols();var selCat=$("#shukeiCat")?$("#shukeiCat").value:"";
     if(selCat)cols=cols.filter(function(c){return c.key===selCat;});
     cols.forEach(function(c){
-      var data=mc[c.key]||{};var ac=shukeiCatColor(c.key);
+      var ac=shukeiCatColor(c.key);
       var block=el("div","shukei-cat");
       var h=el("div","shukei-cat-h");h.textContent=c.label;h.style.borderLeftColor=ac;h.style.color=ac;
-      block.appendChild(h);block.appendChild(shukeiTable(emps,monthCols,data,ac));
+      block.appendChild(h);
+      if(c.key==="reading"){
+        var l1=el("div","shukei-sub");l1.textContent="読書";block.appendChild(l1);
+        block.appendChild(shukeiTable(emps,monthCols,mc["reading_book"]||{},ac));
+        var l2=el("div","shukei-sub");l2.textContent="資格";l2.style.marginTop="14px";block.appendChild(l2);
+        block.appendChild(shukeiTable(emps,monthCols,mc["reading_cert"]||{},ac));
+      }else{
+        block.appendChild(shukeiTable(emps,monthCols,mc[c.key]||{},ac));
+      }
       body.appendChild(block);
     });
   }
