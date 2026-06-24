@@ -417,6 +417,9 @@
   .data-acts .btn[disabled]{opacity:.5;cursor:not-allowed}
   .shukei-sum{font-size:13px;color:var(--ink-soft);margin:4px 2px 14px}
   .shukei-h{font-size:14px;font-weight:800;color:var(--ink);margin:22px 2px 10px}
+  .shukei-cat{margin-top:26px}
+  .shukei-cat:first-of-type{margin-top:8px}
+  .shukei-cat-h{font-size:15px;font-weight:800;padding:3px 0 3px 12px;border-left:5px solid var(--primary);line-height:1.25;margin-bottom:9px}
   .shukei-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
   .shukei-table{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
   .shukei-table th,.shukei-table td{padding:8px 10px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line)}
@@ -427,8 +430,8 @@
   .shukei-table td.name b{display:block;font-size:13px;color:var(--ink)}
   .shukei-table td.name .sub{font-size:11px;color:var(--ink-faint)}
   .shukei-table td.zero{color:var(--ink-faint)}
-  .shukei-table .total{font-weight:800;color:var(--primary);background:var(--primary-tint)}
-  .shukei-table thead th.total{color:var(--primary-dark)}
+  .shukei-table .total{font-weight:800;color:var(--cat,var(--primary));background:var(--paper)}
+  .shukei-table thead th.total{color:var(--cat,var(--primary-dark))}
   .shukei-table tfoot td,.shukei-table tfoot th{font-weight:800;background:var(--paper);border-top:2px solid var(--line)}
 </style>
 
@@ -1391,6 +1394,7 @@
   function monthList(from,to){var out=[];if(!from||!to||from>to)return out;var y=+from.slice(0,4),m=+from.slice(5,7),ty=+to.slice(0,4),tm=+to.slice(5,7),g=0;while((y<ty||(y===ty&&m<=tm))&&g<600){out.push(y+"-"+(m<10?"0"+m:m));m++;if(m>12){m=1;y++;}g++;}return out;}
   function empIdOfPerson(rec){var id=rec.person||"";if(id&&state.employees.some(function(e){return e.id===id;}))return id;return empIdByName(rec.person_snap||"");}
   function shukeiCatCols(){var cols=[];state.menu.forEach(function(m){if(m.key==="reading"){cols.push({key:"reading_book",label:"読書"});cols.push({key:"reading_cert",label:"資格"});}else{cols.push({key:m.key,label:m.name});}});return cols;}
+  function shukeiCatColor(key){if(key==="reading_book")return "#1E807D";if(key==="reading_cert")return "#B36A22";var m=state.menu.find(function(x){return x.key===key;});return (m&&m.accent)?m.accent:"#1F5FB0";}
   function shukeiAggregate(from,to){
     var mc={};
     function inR(mk){return mk&&mk>=from&&mk<=to;}
@@ -1411,8 +1415,9 @@
   function shukeiFilteredEmps(){var q=($("#shukeiName").value||"").trim().toLowerCase();var dq=$("#shukeiDept").value||"";return state.employees.filter(function(e){if(dq&&deptName(e.deptId)!==dq)return false;if(q&&e.name.toLowerCase().indexOf(q)===-1)return false;return true;});}
   function loadAllForShukei(){return Promise.all(["kaizen","study","failure","reading","thanks","growth"].map(function(k){return loadMod(k);}));}
   function thEl(txt,cls){var th=el("th",cls||"");th.textContent=txt;return th;}
-  function shukeiTable(emps,cols,data,labelFn){
-    var wrap=el("div","shukei-tablewrap");var tbl=el("table","shukei-table");
+  function shukeiTable(emps,cols,data,accent){
+    var wrap=el("div","shukei-tablewrap");if(accent)wrap.style.borderTop="3px solid "+accent;
+    var tbl=el("table","shukei-table");if(accent)tbl.style.setProperty("--cat",accent);
     var thead=el("thead");var hr=el("tr");hr.appendChild(thEl("社員","name"));cols.forEach(function(c){hr.appendChild(thEl(c.label));});hr.appendChild(thEl("合計","total"));thead.appendChild(hr);tbl.appendChild(thead);
     var tb=el("tbody");var colTot={};var grand=0;
     emps.forEach(function(e){
@@ -1434,10 +1439,11 @@
     var cols=shukeiCatCols();var selCat=$("#shukeiCat")?$("#shukeiCat").value:"";
     if(selCat)cols=cols.filter(function(c){return c.key===selCat;});
     cols.forEach(function(c){
-      var data=mc[c.key]||{};
-      var tot=0;emps.forEach(function(e){var d=data[e.id]||{};for(var mk in d)tot+=d[mk];});
-      var h=el("div","shukei-h");h.textContent=c.label+"（合計 "+tot+"件）";body.appendChild(h);
-      body.appendChild(shukeiTable(emps,monthCols,data));
+      var data=mc[c.key]||{};var ac=shukeiCatColor(c.key);
+      var block=el("div","shukei-cat");
+      var h=el("div","shukei-cat-h");h.textContent=c.label;h.style.borderLeftColor=ac;h.style.color=ac;
+      block.appendChild(h);block.appendChild(shukeiTable(emps,monthCols,data,ac));
+      body.appendChild(block);
     });
   }
   async function showShukei(){
