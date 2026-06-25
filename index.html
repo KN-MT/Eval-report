@@ -459,15 +459,7 @@
       <div class="title-group">
         <h1>お客様の困っている情報の収集</h1>
       </div>
-      <div class="io-menu-wrap">
-        <button class="icon-btn" id="ioGear" title="インポート / エクスポート" aria-label="データのインポート・エクスポート">⚙</button>
-        <div class="io-menu" id="ioMenu" hidden>
-          <button type="button" id="ioExport">⬇　エクスポート（テンプレート）</button>
-          <button type="button" id="ioImport">⬆　インポート</button>
-        </div>
-      </div>
     </header>
-    <input type="file" id="ioFile" accept=".xlsx,.xls" hidden>
     <div id="mainView">
 
     <button class="add-toggle" id="newReportToggle">＋ 新しい報告を追加</button>
@@ -1695,11 +1687,6 @@
     var _ei=$("#empImpBtn");if(_ei)_ei.addEventListener("click",function(){$("#empImpFile").click();});
     var _ef=$("#empImpFile");if(_ef)_ef.addEventListener("change",function(ev){var fl=ev.target.files&&ev.target.files[0];if(fl)empBulkImport(fl);ev.target.value="";});
     var _dif=$("#dataImpFile");if(_dif)_dif.addEventListener("change",function(ev){var fl=ev.target.files&&ev.target.files[0];if(fl)dataImport(dataImpKey,fl);ev.target.value="";});
-    $("#ioGear").addEventListener("click",function(ev){ev.stopPropagation();var m=$("#ioMenu");m.hidden=!m.hidden;});
-    $("#ioExport").addEventListener("click",function(){closeIoMenu();exportXlsx();});
-    $("#ioImport").addEventListener("click",function(){closeIoMenu();$("#ioFile").click();});
-    $("#ioFile").addEventListener("change",function(ev){var f=ev.target.files&&ev.target.files[0];if(f)importXlsx(f);ev.target.value="";});
-    document.addEventListener("click",function(ev){var w=ev.target.closest&&ev.target.closest(".io-menu-wrap");if(!w)closeIoMenu();});
     $("#catFilter").addEventListener("change",function(ev){var cb=ev.target;if(!cb||cb.type!=="checkbox")return;
       cb.parentNode.classList.toggle("on",cb.checked);
       state.catFilter=Array.prototype.slice.call(this.querySelectorAll("input:checked")).map(function(x){return x.value;});renderList();});
