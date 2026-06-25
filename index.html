@@ -5,6 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
   :root{
@@ -1493,15 +1494,32 @@
       var tp=el("button","btn btn-ghost btn-sm");tp.type="button";tp.textContent="テンプレート";tp.disabled=true;
       var ex=el("button","btn btn-ghost btn-sm");ex.type="button";ex.textContent="エクスポート";ex.disabled=true;
       var im=el("button","btn btn-ghost btn-sm");im.type="button";im.textContent="インポート";im.disabled=true;
-      acts.appendChild(tp);acts.appendChild(ex);acts.appendChild(im);row.appendChild(nm);row.appendChild(acts);box.appendChild(row);
+      acts.appendChild(tp);acts.appendChild(im);acts.appendChild(ex);row.appendChild(nm);row.appendChild(acts);box.appendChild(row);
     });
   }
-  function empTemplateExport(){
+  async function empTemplateExport(){
     if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}
-    var dn=state.departments[0]?state.departments[0].name:"営業部";
+    var depts=state.departments.map(function(d){return d.name;}).filter(Boolean);
+    var dn=depts[0]||"営業部";
     var rows=[{"氏名":"山田 花子","部署":dn,"メールアドレス":"hanako@example.com"},{"氏名":"佐藤 太郎","部署":dn,"メールアドレス":"taro@example.com"}];
     var ws=XLSX.utils.json_to_sheet(rows,{header:["氏名","部署","メールアドレス"]});ws["!cols"]=[{wch:20},{wch:18},{wch:26}];
     var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"社員");
+    var dl=XLSX.utils.aoa_to_sheet(depts.length?depts.map(function(n){return [n];}):[[""]]);dl["!cols"]=[{wch:18}];
+    XLSX.utils.book_append_sheet(wb,dl,"部署一覧");
+    try{
+      if(depts.length&&typeof JSZip!=="undefined"){
+        var arr=XLSX.write(wb,{type:"array",bookType:"xlsx"});
+        var zip=await JSZip.loadAsync(arr);
+        var path="xl/worksheets/sheet1.xml";
+        var xml=await zip.file(path).async("string");
+        var dv=`<dataValidations count="1"><dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="B2:B1000"><formula1>'部署一覧'!$A$1:$A$${depts.length}</formula1></dataValidation></dataValidations>`;
+        if(xml.indexOf("</sheetData>")!==-1){xml=xml.replace("</sheetData>","</sheetData>"+dv);}
+        zip.file(path,xml);
+        var blob=await zip.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+        var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="考課表_社員テンプレート.xlsx";document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},1500);
+        toast("テンプレートをダウンロードしました（部署はプルダウンで選べます）");return;
+      }
+    }catch(e){}
     XLSX.writeFile(wb,"考課表_社員テンプレート.xlsx");toast("テンプレートをダウンロードしました");
   }
   function empBulkImport(file){
