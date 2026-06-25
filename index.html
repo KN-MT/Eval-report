@@ -435,6 +435,9 @@
   .shukei-table .total{font-weight:800;color:var(--cat,var(--primary));background:var(--paper)}
   .shukei-table thead th.total{color:var(--cat,var(--primary-dark))}
   .shukei-table tfoot td,.shukei-table tfoot th{font-weight:800;background:var(--paper);border-top:2px solid var(--line)}
+  .shukei-table tbody tr:hover td.name{background:#eef4fb}
+  .opt-check{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink);cursor:pointer;padding-top:7px;font-weight:600}
+  .opt-check input{width:15px;height:15px;accent-color:var(--primary);flex:none}
 </style>
 
 <div class="wrap">
@@ -607,6 +610,8 @@
           <div class="field"><label for="shukeiName">社員名で絞り込み</label><input type="text" id="shukeiName" placeholder="名前で検索"></div>
           <div class="field"><label for="shukeiDept">部署で絞り込み</label><select id="shukeiDept"></select></div>
           <div class="field"><label for="shukeiCat">項目</label><select id="shukeiCat"></select></div>
+          <div class="field"><label for="shukeiSort">並び替え</label><select id="shukeiSort"><option value="total">合計の多い順</option><option value="name">氏名順</option><option value="dept">部署順</option></select></div>
+          <div class="field"><label>表示</label><label class="opt-check"><input type="checkbox" id="shukeiHide0"><span>0件の社員を隠す</span></label></div>
         </div>
         <div class="form-actions"><button type="button" class="btn btn-ghost btn-sm" id="shukeiFY">今年度（4月〜翌3月）に戻す</button></div>
       </div>
@@ -1417,15 +1422,17 @@
   function shukeiFilteredEmps(){var q=($("#shukeiName").value||"").trim().toLowerCase();var dq=$("#shukeiDept").value||"";return state.employees.filter(function(e){if(dq&&deptName(e.deptId)!==dq)return false;if(q&&e.name.toLowerCase().indexOf(q)===-1)return false;return true;});}
   function loadAllForShukei(){return Promise.all(["kaizen","study","failure","reading","thanks","growth"].map(function(k){return loadMod(k);}));}
   function thEl(txt,cls){var th=el("th",cls||"");th.textContent=txt;return th;}
+  function hexToRgba(hex,a){hex=String(hex||"").replace("#","");if(hex.length===3)hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];var n=parseInt(hex,16);var r=(n>>16)&255,g=(n>>8)&255,b=n&255;return "rgba("+r+","+g+","+b+","+a.toFixed(3)+")";}
   function shukeiTable(emps,cols,data,accent){
     var wrap=el("div","shukei-tablewrap");if(accent)wrap.style.borderTop="3px solid "+accent;
     var tbl=el("table","shukei-table");if(accent)tbl.style.setProperty("--cat",accent);
     var thead=el("thead");var hr=el("tr");hr.appendChild(thEl("社員","name"));cols.forEach(function(c){hr.appendChild(thEl(c.label));});hr.appendChild(thEl("合計","total"));thead.appendChild(hr);tbl.appendChild(thead);
+    var mx=0;emps.forEach(function(e){var dd=data[e.id]||{};cols.forEach(function(c){var v=dd[c.key]||0;if(v>mx)mx=v;});});
     var tb=el("tbody");var colTot={};var grand=0;
     emps.forEach(function(e){
       var tr=el("tr");var nt=el("td","name");nt.innerHTML='<b>'+esc(e.name)+'</b><span class="sub">'+esc(deptName(e.deptId)||"—")+'</span>';tr.appendChild(nt);
       var d=data[e.id]||{};var rowTot=0;
-      cols.forEach(function(c){var v=d[c.key]||0;rowTot+=v;colTot[c.key]=(colTot[c.key]||0)+v;var td=el("td");td.textContent=v||"";if(!v)td.className="zero";tr.appendChild(td);});
+      cols.forEach(function(c){var v=d[c.key]||0;rowTot+=v;colTot[c.key]=(colTot[c.key]||0)+v;var td=el("td");td.textContent=v||"";if(!v){td.className="zero";}else if(accent&&mx>0){td.style.backgroundColor=hexToRgba(accent,0.14+0.66*(v/mx));}tr.appendChild(td);});
       grand+=rowTot;var tt=el("td","total");tt.textContent=rowTot;tr.appendChild(tt);tb.appendChild(tr);
     });
     tbl.appendChild(tb);
@@ -1437,7 +1444,15 @@
     if(!from||!to||from>to){body.innerHTML='<div class="empty">期間を正しく選択してください（始 ≤ 終）。</div>';return;}
     var months=monthList(from,to);var monthCols=months.map(function(mk){return {key:mk,label:(+mk.slice(5,7))+"月"};});
     var mc=shukeiAggregate(from,to);var emps=shukeiFilteredEmps();
-    var sum=el("div","shukei-sum");sum.textContent="期間："+from.replace("-","年")+"月 〜 "+to.replace("-","年")+"月　／　対象社員 "+emps.length+"名";body.appendChild(sum);
+    var grand={};Object.keys(mc).forEach(function(ck){var m=mc[ck];Object.keys(m).forEach(function(id){var t=0,mm=m[id];for(var kk in mm)t+=mm[kk];grand[id]=(grand[id]||0)+t;});});
+    if($("#shukeiHide0")&&$("#shukeiHide0").checked)emps=emps.filter(function(e){return (grand[e.id]||0)>0;});
+    var sortBy=$("#shukeiSort")?$("#shukeiSort").value:"total";
+    emps=emps.slice().sort(function(a,b){
+      if(sortBy==="name")return a.name.localeCompare(b.name,"ja");
+      if(sortBy==="dept"){var da=deptName(a.deptId)||"",db=deptName(b.deptId)||"";if(da!==db)return da.localeCompare(db,"ja");return a.name.localeCompare(b.name,"ja");}
+      return (grand[b.id]||0)-(grand[a.id]||0)||a.name.localeCompare(b.name,"ja");
+    });
+    var sum=el("div","shukei-sum");sum.textContent="期間："+from.replace("-","年")+"月 〜 "+to.replace("-","年")+"月　／　対象社員 "+emps.length+"名　／　色が濃いほど件数が多い";body.appendChild(sum);
     var cols=shukeiCatCols();var selCat=$("#shukeiCat")?$("#shukeiCat").value:"";
     if(selCat)cols=cols.filter(function(c){return c.key===selCat;});
     cols.forEach(function(c){
@@ -1702,6 +1717,8 @@
     var _snm=$("#shukeiName");if(_snm)_snm.addEventListener("input",renderShukei);
     var _sdp=$("#shukeiDept");if(_sdp)_sdp.addEventListener("change",renderShukei);
     var _sct=$("#shukeiCat");if(_sct)_sct.addEventListener("change",renderShukei);
+    var _sso=$("#shukeiSort");if(_sso)_sso.addEventListener("change",renderShukei);
+    var _sh0=$("#shukeiHide0");if(_sh0)_sh0.addEventListener("change",renderShukei);
     var _sfy=$("#shukeiFY");if(_sfy)_sfy.addEventListener("click",function(){var fr=fiscalRange();$("#shukeiFrom").value=fr.from;$("#shukeiTo").value=fr.to;renderShukei();});
     $("#komatteBack").addEventListener("click",showHome);
     $("#addDept").addEventListener("click",addDept);
