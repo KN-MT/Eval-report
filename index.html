@@ -591,8 +591,9 @@
           </div>
         </div>
         <div class="data-sub">各報告データのExcel入出力</div>
-        <div class="soon-note">下記は各項目（報告）のデータをExcelで入出力する機能で、今後追加予定です。（現在は表示のみ）</div>
+        <div class="soon-note">各項目のデータを、テンプレート出力・エクスポート・インポートできます。インポートは、その項目の現在のデータを取り込んだ内容で置き換えます（実行前に確認します）。</div>
         <div class="data-prev" id="dataReportList"></div>
+        <input type="file" id="dataImpFile" accept=".xlsx,.xls" hidden>
       </div>
     </section>
   </div>
@@ -1485,15 +1486,87 @@
     Array.prototype.forEach.call(document.querySelectorAll("#setTabs .set-tab"),function(b){b.classList.toggle("on",b.dataset.cat===cat);});
     if(cat==="data")renderDataList();
   }
+  /* ===== 各項目の Excel 入出力 ===== */
+  var dataImpKey="";
+  function colLetter(i){return String.fromCharCode(65+i);}
+  function todayISO(){var d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());}
+  function thisMonthISO(){var d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1);}
+  function fnDate(){var d=new Date();return ""+d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate());}
+  function dlBlob(blob,filename){var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},1500);}
+  async function writeXlsxWithDV(wb,validations,filename){
+    if(validations&&validations.length&&typeof JSZip!=="undefined"){
+      try{
+        var arr=XLSX.write(wb,{type:"array",bookType:"xlsx"});
+        var zip=await JSZip.loadAsync(arr);var path="xl/worksheets/sheet1.xml";
+        var xml=await zip.file(path).async("string");
+        var inner=validations.map(function(v){return '<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="'+v.sqref+'"><formula1>'+v.formula+'</formula1></dataValidation>';}).join("");
+        var dv='<dataValidations count="'+validations.length+'">'+inner+'</dataValidations>';
+        if(xml.indexOf("</sheetData>")!==-1)xml=xml.replace("</sheetData>","</sheetData>"+dv);
+        zip.file(path,xml);
+        var blob=await zip.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+        dlBlob(blob,filename);return;
+      }catch(e){}
+    }
+    XLSX.writeFile(wb,filename);
+  }
+  function modRecToRowIO(cfg,rec){var o={};cfg.fields.forEach(function(f){var v;if(f.type==="person")v=modPersonName(rec[f.k],rec[f.k+"_snap"]);else if(f.type==="people")v=modPeopleNamesArr(rec[f.k]).join("、");else if(f.type==="check")v=rec[f.k]?"○":"";else v=rec[f.k]||"";o[f.label]=v;});return o;}
+  function modRowToRecIO(cfg,row){var rec={id:uid(),createdAt:Date.now()+Math.floor(Math.random()*100000)};cfg.fields.forEach(function(f){var raw=row[f.label];if(f.type==="person"){var nm=String(raw==null?"":raw).trim();var id=empIdByName(nm);rec[f.k]=id;rec[f.k+"_snap"]=id?"":nm;}else if(f.type==="people"){var arr=String(raw==null?"":raw).split(/[、,\/]/).map(function(x){return x.trim();}).filter(Boolean);rec[f.k]=arr.map(function(n){return empIdByName(n);}).filter(Boolean);}else if(f.type==="check"){var sv=String(raw==null?"":raw).trim();rec[f.k]=/^(○|◯|✓|レ|はい|true|1|yes|y|済)$/i.test(sv);}else if(f.type==="date"){rec[f.k]=normDate(raw);}else if(f.type==="month"){rec[f.k]=normMonth(raw);}else{rec[f.k]=String(raw==null?"":raw).trim();}});return rec;}
+  function modTemplateXlsx(key){
+    var cfg=MOD_CFGS[key];var headers=cfg.fields.map(function(f){return f.label;});
+    var names=state.employees.map(function(e){return e.name;}).filter(Boolean);
+    var ex={};cfg.fields.forEach(function(f){if(f.type==="person")ex[f.label]=names[0]||"山田 花子";else if(f.type==="people")ex[f.label]=names.slice(0,2).join("、")||"山田 花子、佐藤 太郎";else if(f.type==="date")ex[f.label]=todayISO();else if(f.type==="month")ex[f.label]=thisMonthISO();else if(f.type==="check")ex[f.label]="";else if(f.type==="select")ex[f.label]=(f.options&&f.options[0])||"";else ex[f.label]="（例）";});
+    var ws=XLSX.utils.json_to_sheet([ex],{header:headers});ws["!cols"]=headers.map(function(h){return {wch:h.length>6?24:14};});
+    var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"データ");
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(names.length?names.map(function(n){return [n];}):[[""]]),"社員一覧");
+    var vals=[];cfg.fields.forEach(function(f,i){var col=colLetter(i);if(f.type==="person"&&names.length)vals.push({sqref:col+"2:"+col+"1000",formula:"'社員一覧'!$A$1:$A$"+names.length});else if(f.type==="select"&&f.options&&f.options.length)vals.push({sqref:col+"2:"+col+"1000",formula:'"'+f.options.join(",")+'"'});});
+    writeXlsxWithDV(wb,vals,"考課表_"+cfg.title+"テンプレート.xlsx").then(function(){toast("テンプレートをダウンロードしました");});
+  }
+  function modExportXlsx(key){
+    var cfg=MOD_CFGS[key];var headers=cfg.fields.map(function(f){return f.label;});
+    var data=(MOD_DATA[key]||[]).slice().sort(function(a,b){return (a.reportDate||"").localeCompare(b.reportDate||"")||(a.createdAt||0)-(b.createdAt||0);});
+    var rows=data.map(function(rec){return modRecToRowIO(cfg,rec);});
+    var ws=XLSX.utils.json_to_sheet(rows,{header:headers});ws["!cols"]=headers.map(function(h){return {wch:h.length>6?24:14};});
+    var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"データ");
+    XLSX.writeFile(wb,"考課表_"+cfg.title+"_"+fnDate()+".xlsx");toast("エクスポートしました（"+rows.length+"件）");
+  }
+  function modImportXlsx(key,file){
+    var cfg=MOD_CFGS[key];var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array",cellDates:true});
+        var ws=wb.Sheets[wb.SheetNames[0]];var rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+        var imported=rows.map(function(row){return modRowToRecIO(cfg,row);}).filter(function(rec){return cfg.fields.some(function(f){var v=rec[f.k];if(f.type==="check")return false;if(f.type==="people")return v&&v.length;return v!==""&&v!=null;});});
+        if(!imported.length){toast("有効なデータが見つかりませんでした");return;}
+        var cur=(MOD_DATA[key]||[]).length;
+        if(!confirm(cfg.title+"の現在 "+cur+" 件を、インポートした "+imported.length+" 件で置き換えます。よろしいですか？"))return;
+        MOD_DATA[key]=imported;
+        persistMod(key).then(function(){toast("インポートしました（"+imported.length+"件）");if(typeof MOD_UI!=="undefined"&&MOD_UI&&MOD_UI.key===key)renderModList();});
+      }catch(err){console.error(err);toast("インポートに失敗しました。テンプレート形式をご確認ください");}
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  function komatteTemplateXlsx(){
+    var names=state.employees.map(function(e){return e.name;}).filter(Boolean);
+    var ex={"報告日":todayISO(),"提案者":names[0]||"山田 花子","部署":(state.employees[0]?deptName(state.employees[0].deptId):"営業部"),"お客様の困っている情報":"（例）〇〇について","情報の詳細":"","解決策":"","実施担当者":"","完了時期":"","備考":"","カテゴリ":"GCC案件","対応状況":"進行中"};
+    var ws=XLSX.utils.json_to_sheet([ex],{header:IO_HEADER});ws["!cols"]=IO_HEADER.map(function(h){return {wch:(h==="お客様の困っている情報"||h==="情報の詳細"||h==="解決策")?28:14};});
+    var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"データ");
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(names.length?names.map(function(n){return [n];}):[[""]]),"社員一覧");
+    var vals=[];if(names.length)vals.push({sqref:"B2:B1000",formula:"'社員一覧'!$A$1:$A$"+names.length});vals.push({sqref:"K2:K1000",formula:'"進行中,解決済,解決不可能"'});
+    writeXlsxWithDV(wb,vals,"考課表_困っているテンプレート.xlsx").then(function(){toast("テンプレートをダウンロードしました");});
+  }
+  function dataTemplate(key){if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}if(key==="komatte")komatteTemplateXlsx();else modTemplateXlsx(key);}
+  async function dataExport(key){if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}if(key==="komatte"){exportXlsx();return;}try{await loadMod(key);}catch(e){}modExportXlsx(key);}
+  async function dataImport(key,file){if(typeof XLSX==="undefined"){toast("Excelライブラリを読み込み中です。少し待って再度お試しください");return;}if(key==="komatte"){importXlsx(file);return;}try{await loadMod(key);}catch(e){}modImportXlsx(key,file);}
+  function dataIOBtn(label){var b=el("button","btn btn-ghost btn-sm");b.type="button";b.textContent=label;return b;}
   function renderDataList(){
     var box=$("#dataReportList");if(!box)return;box.innerHTML="";
     state.menu.forEach(function(m){
       var row=el("div","data-row");
       var nm=el("span","data-name");nm.textContent=m.name;
       var acts=el("span","data-acts");
-      var tp=el("button","btn btn-ghost btn-sm");tp.type="button";tp.textContent="テンプレート";tp.disabled=true;
-      var ex=el("button","btn btn-ghost btn-sm");ex.type="button";ex.textContent="エクスポート";ex.disabled=true;
-      var im=el("button","btn btn-ghost btn-sm");im.type="button";im.textContent="インポート";im.disabled=true;
+      var tp=dataIOBtn("テンプレート");tp.onclick=function(){dataTemplate(m.key);};
+      var im=dataIOBtn("インポート");im.onclick=function(){dataImpKey=m.key;var fi=$("#dataImpFile");if(fi)fi.click();};
+      var ex=dataIOBtn("エクスポート");ex.onclick=function(){dataExport(m.key);};
       acts.appendChild(tp);acts.appendChild(im);acts.appendChild(ex);row.appendChild(nm);row.appendChild(acts);box.appendChild(row);
     });
   }
@@ -1621,6 +1694,7 @@
     var _et=$("#empTplBtn");if(_et)_et.addEventListener("click",empTemplateExport);
     var _ei=$("#empImpBtn");if(_ei)_ei.addEventListener("click",function(){$("#empImpFile").click();});
     var _ef=$("#empImpFile");if(_ef)_ef.addEventListener("change",function(ev){var fl=ev.target.files&&ev.target.files[0];if(fl)empBulkImport(fl);ev.target.value="";});
+    var _dif=$("#dataImpFile");if(_dif)_dif.addEventListener("change",function(ev){var fl=ev.target.files&&ev.target.files[0];if(fl)dataImport(dataImpKey,fl);ev.target.value="";});
     $("#ioGear").addEventListener("click",function(ev){ev.stopPropagation();var m=$("#ioMenu");m.hidden=!m.hidden;});
     $("#ioExport").addEventListener("click",function(){closeIoMenu();exportXlsx();});
     $("#ioImport").addEventListener("click",function(){closeIoMenu();$("#ioFile").click();});
