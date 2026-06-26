@@ -1420,6 +1420,30 @@
     var tf=el("tfoot");var fr=el("tr");fr.appendChild(thEl("合計","name"));cols.forEach(function(c){var td=el("td");td.textContent=colTot[c.key]||0;fr.appendChild(td);});var gt=el("td","total");gt.textContent=grand;fr.appendChild(gt);tf.appendChild(fr);tbl.appendChild(tf);
     wrap.appendChild(tbl);return wrap;
   }
+  function shukeiItemRows(){var rows=[];state.menu.forEach(function(m){
+    if(m.key==="study"){rows.push({key:"study_plan",label:m.name+"（企画者）"});rows.push({key:"study_part",label:m.name+"（参加者）"});}
+    else if(m.key==="thanks"){rows.push({key:"thanks_rep",label:m.name+"（報告者）"});rows.push({key:"thanks_recv",label:m.name+"（感謝を受けた人）"});}
+    else if(m.key==="reading"){rows.push({key:"reading_book",label:"読書"});rows.push({key:"reading_cert",label:"資格"});}
+    else{rows.push({key:m.key,label:m.name});}
+  });return rows;}
+  function leafColor(key){var base=key;if(key.indexOf("study")===0)base="study";else if(key.indexOf("thanks")===0)base="thanks";else if(key.indexOf("reading")===0)base="reading";var m=state.menu.find(function(x){return x.key===base;});return (m&&m.accent)?m.accent:"#1F5FB0";}
+  function shukeiSoloTable(emp,monthCols,mc,rows){
+    var wrap=el("div","shukei-tablewrap");wrap.style.borderTop="3px solid #1F5FB0";
+    var tbl=el("table","shukei-table");tbl.style.setProperty("--cat","#1F5FB0");
+    var thead=el("thead");var hr=el("tr");hr.appendChild(thEl("項目","name"));monthCols.forEach(function(c){hr.appendChild(thEl(c.label));});hr.appendChild(thEl("合計","total"));thead.appendChild(hr);tbl.appendChild(thead);
+    var tb=el("tbody");var colTot={};var grand=0;
+    rows.forEach(function(it){
+      var data=(mc[it.key]&&mc[it.key][emp.id])||{};var ac=leafColor(it.key);
+      var mx=0;monthCols.forEach(function(c){var v=data[c.key]||0;if(v>mx)mx=v;});
+      var tr=el("tr");var nt=el("td","name");nt.innerHTML='<b style="color:'+ac+'">'+esc(it.label)+'</b>';tr.appendChild(nt);
+      var rowTot=0;
+      monthCols.forEach(function(c){var v=data[c.key]||0;rowTot+=v;colTot[c.key]=(colTot[c.key]||0)+v;var td=el("td");td.textContent=v||"";if(!v){td.className="zero";}else if(mx>0){td.style.backgroundColor=hexToRgba(ac,0.14+0.66*(v/mx));}tr.appendChild(td);});
+      grand+=rowTot;var tt=el("td","total");tt.textContent=rowTot;tr.appendChild(tt);tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    var tf=el("tfoot");var fr=el("tr");fr.appendChild(thEl("合計","name"));monthCols.forEach(function(c){var td=el("td");td.textContent=colTot[c.key]||0;fr.appendChild(td);});var gt=el("td","total");gt.textContent=grand;fr.appendChild(gt);tf.appendChild(fr);tbl.appendChild(tf);
+    wrap.appendChild(tbl);return wrap;
+  }
   function renderShukei(){
     var from=$("#shukeiFrom").value,to=$("#shukeiTo").value;var body=$("#shukeiBody");body.innerHTML="";
     if(!from||!to||from>to){body.innerHTML='<div class="empty">期間を正しく選択してください（始 ≤ 終）。</div>';return;}
@@ -1434,6 +1458,13 @@
       return (grand[b.id]||0)-(grand[a.id]||0)||a.name.localeCompare(b.name,"ja");
     });
     var sum=el("div","shukei-sum");sum.textContent="期間："+from.replace("-","年")+"月 〜 "+to.replace("-","年")+"月　／　対象社員 "+emps.length+"名　／　色が濃いほど件数が多い";body.appendChild(sum);
+    if(emps.length===1){
+      var emp=emps[0];var irows=shukeiItemRows();
+      var sblock=el("div","shukei-cat");
+      var sh=el("div","shukei-cat-h");sh.textContent=emp.name+"（"+(deptName(emp.deptId)||"—")+"）の集計";sh.style.borderLeftColor="#1F5FB0";sh.style.color="#1F5FB0";
+      sblock.appendChild(sh);sblock.appendChild(shukeiSoloTable(emp,monthCols,mc,irows));body.appendChild(sblock);
+      return;
+    }
     var cols=shukeiCatCols();var selCat=$("#shukeiCat")?$("#shukeiCat").value:"";
     if(selCat)cols=cols.filter(function(c){return c.key===selCat;});
     cols.forEach(function(c){
