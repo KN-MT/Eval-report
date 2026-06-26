@@ -93,6 +93,7 @@
   .btn-ghost{background:transparent;border-color:var(--line-strong);color:var(--ink-soft)}
   .btn-ghost:hover{border-color:var(--ink-soft);color:var(--ink)}
   .btn-sm{padding:9px 16px;font-size:13.5px}
+  .fy-btns{display:flex;gap:10px}
 
   .list-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:30px 0 14px}
   .list-head h2{font-size:18px;margin:0;font-weight:700}
@@ -613,13 +614,13 @@
         <div class="grid">
           <div class="field"><label for="shukeiFrom">期間（始）</label><input type="text" id="shukeiFrom" class="dpick" data-mode="month" readonly placeholder="年月を選択"></div>
           <div class="field"><label for="shukeiTo">期間（終）</label><input type="text" id="shukeiTo" class="dpick" data-mode="month" readonly placeholder="年月を選択"></div>
+          <div class="field full"><div class="fy-btns"><button type="button" class="btn btn-ghost btn-sm" id="shukeiPrevFY">前年度</button><button type="button" class="btn btn-ghost btn-sm" id="shukeiThisFY">今年度</button></div></div>
           <div class="field"><label for="shukeiDept">部署で絞り込み</label><select id="shukeiDept"></select></div>
           <div class="field"><label for="shukeiEmp">社員名で絞り込み</label><select id="shukeiEmp"></select></div>
           <div class="field"><label for="shukeiCat">項目</label><select id="shukeiCat"></select></div>
           <div class="field"><label for="shukeiSort">並び替え</label><select id="shukeiSort"><option value="total">合計の多い順</option><option value="name">氏名順</option><option value="dept">部署順</option></select></div>
-          <div class="field"><label>表示</label><label class="opt-check"><input type="checkbox" id="shukeiHide0"><span>0件の社員を隠す</span></label></div>
+          <div class="field"><label class="opt-check"><input type="checkbox" id="shukeiHide0"><span>0件の社員を隠す</span></label></div>
         </div>
-        <div class="form-actions"><button type="button" class="btn btn-ghost btn-sm" id="shukeiFY">今年度（4月〜翌3月）に戻す</button></div>
       </div>
     </section>
     <div id="shukeiBody"></div>
@@ -697,7 +698,7 @@
     DP.input=inp;DP.kind=(inp.dataset.mode==="month")?"month":"day";DP.picking=null;
     var c=dpReadField()||{};var now=new Date();
     DP.view=new Date(c.y||now.getFullYear(),(c.m!=null?c.m:now.getMonth()),1);
-    if(!DP.pop){DP.pop=el("div","dpick-pop");document.body.appendChild(DP.pop);}
+    if(!DP.pop){DP.pop=el("div","dpick-pop");DP.pop.addEventListener("click",function(ev){ev.stopPropagation();});document.body.appendChild(DP.pop);}
     dpRender();DP.pop.style.display="block";
     var r=inp.getBoundingClientRect();
     DP.pop.style.left=(window.scrollX+r.left)+"px";DP.pop.style.top=(window.scrollY+r.bottom+10)+"px";
@@ -1478,7 +1479,7 @@
 
   /* ---- view toggle (home / komatte / settings) ---- */
   /* ===== 集計 ===== */
-  function fiscalRange(){var d=new Date();var y=d.getFullYear();var m=d.getMonth()+1;var sy=(m>=4)?y:y-1;return {from:sy+"-04",to:(sy+1)+"-03"};}
+  function fiscalRange(off){off=off||0;var d=new Date();var y=d.getFullYear();var m=d.getMonth()+1;var sy=((m>=4)?y:y-1)+off;return {from:sy+"-04",to:(sy+1)+"-03"};}
   function monthList(from,to){var out=[];if(!from||!to||from>to)return out;var y=+from.slice(0,4),m=+from.slice(5,7),ty=+to.slice(0,4),tm=+to.slice(5,7),g=0;while((y<ty||(y===ty&&m<=tm))&&g<600){out.push(y+"-"+(m<10?"0"+m:m));m++;if(m>12){m=1;y++;}g++;}return out;}
   function empIdOfPerson(rec){var id=rec.person||"";if(id&&state.employees.some(function(e){return e.id===id;}))return id;return empIdByName(rec.person_snap||"");}
   function shukeiCatCols(){var cols=[];state.menu.forEach(function(m){cols.push({key:m.key,label:m.name});});return cols;}
@@ -1840,7 +1841,8 @@
     var _sct=$("#shukeiCat");if(_sct)_sct.addEventListener("change",renderShukei);
     var _sso=$("#shukeiSort");if(_sso)_sso.addEventListener("change",renderShukei);
     var _sh0=$("#shukeiHide0");if(_sh0)_sh0.addEventListener("change",renderShukei);
-    var _sfy=$("#shukeiFY");if(_sfy)_sfy.addEventListener("click",function(){var fr=fiscalRange();$("#shukeiFrom").value=fr.from;$("#shukeiTo").value=fr.to;renderShukei();});
+    var _spfy=$("#shukeiPrevFY");if(_spfy)_spfy.addEventListener("click",function(){var fr=fiscalRange(-1);$("#shukeiFrom").value=fr.from;$("#shukeiTo").value=fr.to;renderShukei();});
+    var _stfy=$("#shukeiThisFY");if(_stfy)_stfy.addEventListener("click",function(){var fr=fiscalRange(0);$("#shukeiFrom").value=fr.from;$("#shukeiTo").value=fr.to;renderShukei();});
     $("#komatteBack").addEventListener("click",showHome);
     $("#addDept").addEventListener("click",addDept);
     $("#newDept").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();addDept();}});
