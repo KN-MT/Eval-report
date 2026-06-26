@@ -94,6 +94,9 @@
   .btn-ghost:hover{border-color:var(--ink-soft);color:var(--ink)}
   .btn-sm{padding:9px 16px;font-size:13.5px}
   .fy-btns{display:flex;gap:10px}
+  .period-row{display:flex;gap:12px 18px;align-items:flex-end;flex-wrap:wrap}
+  .period-row .field{gap:6px}
+  .period-row input{width:150px}
 
   .list-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:30px 0 14px}
   .list-head h2{font-size:18px;margin:0;font-weight:700}
@@ -612,9 +615,11 @@
     <section class="panel">
       <div class="panel-body">
         <div class="grid">
-          <div class="field"><label for="shukeiFrom">期間（始）</label><input type="text" id="shukeiFrom" class="dpick" data-mode="month" readonly placeholder="年月を選択"></div>
-          <div class="field"><label for="shukeiTo">期間（終）</label><input type="text" id="shukeiTo" class="dpick" data-mode="month" readonly placeholder="年月を選択"></div>
-          <div class="field full"><div class="fy-btns"><button type="button" class="btn btn-ghost btn-sm" id="shukeiPrevFY">前年度</button><button type="button" class="btn btn-ghost btn-sm" id="shukeiThisFY">今年度</button></div></div>
+          <div class="field full"><div class="period-row">
+            <div class="field"><label for="shukeiFrom">期間始</label><input type="text" id="shukeiFrom" class="dpick" data-mode="month" readonly placeholder="年月を選択"></div>
+            <div class="field"><label for="shukeiTo">期間終</label><input type="text" id="shukeiTo" class="dpick" data-mode="month" readonly placeholder="年月を選択"></div>
+            <div class="fy-btns"><button type="button" class="btn btn-ghost btn-sm" id="shukeiPrevFY">前年度</button><button type="button" class="btn btn-ghost btn-sm" id="shukeiThisFY">今年度</button></div>
+          </div></div>
           <div class="field"><label for="shukeiDept">部署で絞り込み</label><select id="shukeiDept"></select></div>
           <div class="field"><label for="shukeiEmp">社員名で絞り込み</label><select id="shukeiEmp"></select></div>
           <div class="field"><label for="shukeiCat">項目</label><select id="shukeiCat"></select></div>
