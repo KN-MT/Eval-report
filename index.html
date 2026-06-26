@@ -353,6 +353,18 @@
   .dpick-day:hover{background:var(--primary-tint)}
   .dpick-day.today{box-shadow:inset 0 0 0 1.5px var(--primary)}
   .dpick-day.sel{background:var(--primary);color:#fff}
+  .dpick-title{cursor:pointer}
+  .dpick-title:hover{text-decoration:underline}
+  .dpick-nav.off{color:var(--line-strong);cursor:default}
+  .dpick-nav.off:hover{background:none;color:var(--line-strong)}
+  .dpick-pager{display:block;width:100%;border:none;background:none;cursor:pointer;color:var(--ink-faint);font-size:12px;letter-spacing:.3em;padding:5px 0;font-family:inherit}
+  .dpick-pager:hover{color:var(--primary)}
+  .dpick-years{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:2px 0}
+  .dpick-months{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 0}
+  .dpick-yr,.dpick-mo{height:38px;border:none;background:none;cursor:pointer;font-size:13.5px;font-weight:700;color:var(--primary);border-radius:9px;font-family:inherit;transition:background .12s,color .12s}
+  .dpick-yr:hover,.dpick-mo:hover{background:var(--primary-tint)}
+  .dpick-yr.sel,.dpick-mo.sel{background:var(--primary);color:#fff}
+  .dpick-mo.today,.dpick-yr.today{box-shadow:inset 0 0 0 1.5px var(--primary)}
   .menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
   .menu-card{background:#fff;border:none;border-radius:18px;box-shadow:0 4px 18px rgba(27,42,61,.08);padding:28px 16px 32px;display:flex;flex-direction:column;align-items:center;gap:16px;cursor:pointer;font-family:inherit;transition:transform .18s,box-shadow .18s}
   .menu-card:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(27,42,61,.16)}
@@ -599,8 +611,8 @@
     <section class="panel">
       <div class="panel-body">
         <div class="grid">
-          <div class="field"><label for="shukeiFrom">期間（始）</label><input type="month" id="shukeiFrom"></div>
-          <div class="field"><label for="shukeiTo">期間（終）</label><input type="month" id="shukeiTo"></div>
+          <div class="field"><label for="shukeiFrom">期間（始）</label><input type="text" id="shukeiFrom" class="dpick" data-mode="month" readonly placeholder="年月を選択"></div>
+          <div class="field"><label for="shukeiTo">期間（終）</label><input type="text" id="shukeiTo" class="dpick" data-mode="month" readonly placeholder="年月を選択"></div>
           <div class="field"><label for="shukeiDept">部署で絞り込み</label><select id="shukeiDept"></select></div>
           <div class="field"><label for="shukeiEmp">社員名で絞り込み</label><select id="shukeiEmp"></select></div>
           <div class="field"><label for="shukeiCat">項目</label><select id="shukeiCat"></select></div>
@@ -674,25 +686,42 @@
   function esc(s){return (s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   function statusClass(s){return s==="解決済"?"resolved":s==="解決不可能"?"blocked":"pending";}
   function fmtDate(iso){if(!iso)return "";var p=iso.split("-");if(p.length!==3)return iso;return p[0]+"/"+p[1]+"/"+p[2];}
-  var DP={input:null,view:null,pop:null};
-  function dpParseVal(inp){var iso=inp.dataset.iso||normDate(inp.value||"");if(!/^\d{4}-\d{2}-\d{2}$/.test(iso))return null;var p=iso.split("-");var d=new Date(+p[0],+p[1]-1,+p[2]);return isNaN(d.getTime())?null:d;}
-  function dpClose(){if(DP.pop)DP.pop.style.display="none";DP.input=null;}
+  var DP={input:null,view:null,pop:null,kind:"day",picking:null,yearStart:0};
+  function dpReadField(){
+    var inp=DP.input,v=inp.dataset.iso||inp.value||"";
+    if(DP.kind==="month"){var mm=/^(\d{4})[-\/](\d{1,2})/.exec(v);if(mm)return {y:+mm[1],m:+mm[2]-1,d:1};return null;}
+    var iso=inp.dataset.iso||normDate(v);var dd=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);if(dd)return {y:+dd[1],m:+dd[2]-1,d:+dd[3]};return null;
+  }
+  function dpClose(){if(DP.pop)DP.pop.style.display="none";DP.input=null;DP.picking=null;}
   function dpOpen(inp){
-    DP.input=inp;var sel=dpParseVal(inp);var base=sel||new Date();DP.view=new Date(base.getFullYear(),base.getMonth(),1);
+    DP.input=inp;DP.kind=(inp.dataset.mode==="month")?"month":"day";DP.picking=null;
+    var c=dpReadField()||{};var now=new Date();
+    DP.view=new Date(c.y||now.getFullYear(),(c.m!=null?c.m:now.getMonth()),1);
     if(!DP.pop){DP.pop=el("div","dpick-pop");document.body.appendChild(DP.pop);}
     dpRender();DP.pop.style.display="block";
     var r=inp.getBoundingClientRect();
-    DP.pop.style.left=(window.scrollX+r.left)+"px";
-    DP.pop.style.top=(window.scrollY+r.bottom+10)+"px";
+    DP.pop.style.left=(window.scrollX+r.left)+"px";DP.pop.style.top=(window.scrollY+r.bottom+10)+"px";
+  }
+  function dpHead(){
+    var head=el("div","dpick-head");var y=DP.view.getFullYear(),m=DP.view.getMonth();
+    var pv=el("button","dpick-nav"+(DP.picking==="year"?" off":""));pv.type="button";pv.textContent="‹";
+    var nx=el("button","dpick-nav"+(DP.picking==="year"?" off":""));nx.type="button";nx.textContent="›";
+    var ti=el("div","dpick-title");ti.textContent=(DP.kind==="month")?(y+"年"):(y+"年 "+(m+1)+"月");
+    if(DP.picking!=="year"){
+      pv.onclick=function(){DP.view=(DP.kind==="month")?new Date(y-1,m,1):new Date(y,m-1,1);dpRender();};
+      nx.onclick=function(){DP.view=(DP.kind==="month")?new Date(y+1,m,1):new Date(y,m+1,1);dpRender();};
+    }
+    ti.onclick=function(){if(DP.picking==="year"){DP.picking=null;}else{DP.picking="year";DP.yearStart=DP.view.getFullYear();}dpRender();};
+    head.appendChild(pv);head.appendChild(ti);head.appendChild(nx);return head;
   }
   function dpRender(){
-    var pop=DP.pop;pop.innerHTML="";var sel=dpParseVal(DP.input);var now=new Date();
-    var y=DP.view.getFullYear(),m=DP.view.getMonth();
-    var head=el("div","dpick-head");
-    var pv=el("button","dpick-nav");pv.type="button";pv.textContent="‹";pv.onclick=function(){DP.view=new Date(y,m-1,1);dpRender();};
-    var ti=el("div","dpick-title");ti.textContent=y+"年 "+(m+1)+"月";
-    var nx=el("button","dpick-nav");nx.type="button";nx.textContent="›";nx.onclick=function(){DP.view=new Date(y,m+1,1);dpRender();};
-    head.appendChild(pv);head.appendChild(ti);head.appendChild(nx);pop.appendChild(head);
+    var pop=DP.pop;pop.innerHTML="";pop.appendChild(dpHead());
+    if(DP.picking==="year"){dpRenderYears(pop);return;}
+    if(DP.kind==="month"){dpRenderMonths(pop);return;}
+    dpRenderDays(pop);
+  }
+  function dpRenderDays(pop){
+    var sel=dpReadField();var now=new Date();var y=DP.view.getFullYear(),m=DP.view.getMonth();
     var wk=el("div","dpick-wk");["月","火","水","木","金","土","日"].forEach(function(w){var sp=el("span");sp.textContent=w;wk.appendChild(sp);});pop.appendChild(wk);
     var grid=el("div","dpick-grid");var startCol=(new Date(y,m,1).getDay()+6)%7;
     for(var i=0;i<startCol;i++)grid.appendChild(el("span","dpick-empty"));
@@ -700,11 +729,36 @@
     for(var d=1;d<=dim;d++){(function(day){
       var b=el("button","dpick-day");b.type="button";b.textContent=day;
       if(now.getFullYear()===y&&now.getMonth()===m&&now.getDate()===day)b.classList.add("today");
-      if(sel&&sel.getFullYear()===y&&sel.getMonth()===m&&sel.getDate()===day)b.classList.add("sel");
+      if(sel&&sel.y===y&&sel.m===m&&sel.d===day)b.classList.add("sel");
       b.onclick=function(){var iso=y+"-"+pad2(m+1)+"-"+pad2(day);DP.input.dataset.iso=iso;DP.input.value=fmtDate(iso);DP.input.dispatchEvent(new Event("change",{bubbles:true}));dpClose();};
       grid.appendChild(b);
     })(d);}
     pop.appendChild(grid);
+  }
+  function dpRenderMonths(pop){
+    var sel=dpReadField();var now=new Date();var y=DP.view.getFullYear();
+    var grid=el("div","dpick-months");
+    for(var mo=0;mo<12;mo++){(function(mm){
+      var b=el("button","dpick-mo");b.type="button";b.textContent=(mm+1)+"月";
+      if(now.getFullYear()===y&&now.getMonth()===mm)b.classList.add("today");
+      if(sel&&sel.y===y&&sel.m===mm)b.classList.add("sel");
+      b.onclick=function(){var ym=y+"-"+pad2(mm+1);DP.input.dataset.iso="";DP.input.value=ym;DP.input.dispatchEvent(new Event("change",{bubbles:true}));dpClose();};
+      grid.appendChild(b);
+    })(mo);}
+    pop.appendChild(grid);
+  }
+  function dpRenderYears(pop){
+    var start=DP.yearStart;var vy=DP.view.getFullYear();
+    var up=el("button","dpick-pager");up.type="button";up.textContent="▲";up.onclick=function(){DP.yearStart-=25;dpRender();};pop.appendChild(up);
+    var grid=el("div","dpick-years");
+    for(var i=0;i<25;i++){(function(yy){
+      var b=el("button","dpick-yr");b.type="button";b.textContent=yy;
+      if(yy===vy)b.classList.add("sel");
+      b.onclick=function(){DP.view=new Date(yy,DP.view.getMonth(),1);DP.picking=null;dpRender();};
+      grid.appendChild(b);
+    })(start+i);}
+    pop.appendChild(grid);
+    var dn=el("button","dpick-pager");dn.type="button";dn.textContent="▼";dn.onclick=function(){DP.yearStart+=25;dpRender();};pop.appendChild(dn);
   }
   document.addEventListener("click",function(e){
     var t=e.target;var inp=(t&&t.closest)?t.closest("input.dpick"):null;
